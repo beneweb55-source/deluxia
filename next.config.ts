@@ -5,6 +5,30 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
 
+  /**
+   * Correctif Prisma sur Vercel — « Query Engine could not be located ».
+   *
+   * Sur le runtime serverless de Vercel, le traceur de fichiers de Next ne
+   * copiait pas le moteur natif de Prisma
+   * (`libquery_engine-rhel-openssl-3.0.x.so.node`) à côté de la fonction :
+   * toute requête à la base échouait alors au runtime — connexion, inscription
+   * et commande cassées, alors que le site s'affichait.
+   *
+   *  1. `serverExternalPackages` empêche webpack de bundler Prisma : le paquet
+   *     reste chargé depuis node_modules, moteur compris.
+   *  2. `outputFileTracingIncludes` force la copie du moteur dans le bundle de
+   *     chaque route, quelle qu'elle soit.
+   *
+   * L'ancienne option `optimizePackageImports: ['@prisma/client']` est retirée :
+   * elle réécrit les imports de Prisma et brouille justement la localisation du
+   * moteur.
+   */
+  serverExternalPackages: ['@prisma/client', 'prisma'],
+
+  outputFileTracingIncludes: {
+    '/**': ['./node_modules/.prisma/client/**/*'],
+  },
+
   images: {
     // Les visuels produits sont pour l'instant générés (placeholders premium).
     // Quand le client fournira ses photos, il suffira d'ajouter son domaine ici
@@ -12,10 +36,6 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [{ protocol: 'https', hostname: '**' }],
     deviceSizes: [360, 480, 640, 828, 1080, 1280, 1920],
-  },
-
-  experimental: {
-    optimizePackageImports: ['@prisma/client'],
   },
 
   /**
