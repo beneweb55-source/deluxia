@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { ProductVisual, type VisualKind } from '@/components/ProductVisual';
 import { ArrowRightIcon } from '@/components/icons';
-import { prisma } from '@/lib/prisma';
+import { getNavCollections } from '@/lib/catalog';
 
 /** Silhouette de fond associée à chaque univers. */
 const KINDS: Record<string, VisualKind> = {
@@ -19,10 +19,12 @@ const KINDS: Record<string, VisualKind> = {
  * mobile, où se fait l'essentiel du trafic.
  */
 export async function CategoryShowcase() {
-  const collections = await prisma.collection.findMany({
-    orderBy: { position: 'asc' },
-    select: { name: true, slug: true },
-  });
+  // Lecture partagée et tolérante à la panne (voir `getNavCollections`) : si la
+  // base est momentanément injoignable, la section est simplement omise plutôt
+  // que de faire tomber l'accueil.
+  const collections = await getNavCollections();
+
+  if (collections.length === 0) return null;
 
   return (
     <section className="shell py-(--spacing-section)">

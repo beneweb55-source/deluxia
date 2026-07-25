@@ -21,8 +21,9 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: 'fr',
     dir: 'ltr',
     categories: ['shopping'],
-    // Uniquement le logotype SVG, servi tel quel : aucune déclinaison PNG
-    // n'est générée. Voir `src/app/icon.svg`.
-    icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }],
+    // Le logotype est fourni en PNG (src/app/icon.png). Le manifeste doit
+    // pointer vers le fichier qui existe réellement, sinon le navigateur signale
+    // « icon isn't a valid image » et l'ajout à l'écran d'accueil échoue.
+    icons: [{ src: '/icon.png', sizes: '1080x1080', type: 'image/png' }],
   };
 }
