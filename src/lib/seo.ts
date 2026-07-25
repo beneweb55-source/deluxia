@@ -3,12 +3,41 @@ import { BRAND, SOCIALS } from '@/lib/brand';
 /**
  * Référencement — URL canonique et données structurées schema.org.
  *
- * Un seul point de vérité pour l'URL du site : en production elle vient de
- * NEXT_PUBLIC_SITE_URL, en local elle retombe sur le port de développement.
- * Toutes les URL absolues (sitemap, Open Graph, JSON-LD) en découlent.
+ * ⚠ Cette fonction alimente `metadataBase: new URL(siteUrl())` dans le layout
+ * racine. Si elle renvoyait une chaîne invalide, `new URL()` lèverait une
+ * exception à l'évaluation du module, et **toutes les pages** du site
+ * s'afficheraient en « erreur serveur ». C'est le piège classique du
+ * déploiement Vercel : une variable `NEXT_PUBLIC_SITE_URL` saisie sans
+ * `https://` (« deluxia.vercel.app »), avec un `/` final, ou laissée vide,
+ * suffit à faire tomber l'ensemble du site.
+ *
+ * `siteUrl()` doit donc TOUJOURS renvoyer une URL absolue valide, quoi qu'on
+ * lui donne. L'ordre de résolution : la variable explicite, puis les variables
+ * fournies automatiquement par Vercel, puis le port de développement.
  */
+
+/** Ajoute le protocole manquant, valide, et ne garde que l'origine (sans chemin). */
+function normalizeBase(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  let value = raw.trim();
+  if (!value) return null;
+  if (!/^https?:\/\//i.test(value)) value = `https://${value}`;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
 export function siteUrl(path = ''): string {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3100').replace(/\/$/, '');
+  const base =
+    normalizeBase(process.env.NEXT_PUBLIC_SITE_URL) ??
+    // Domaine de production Vercel, puis URL de déploiement — toutes deux
+    // fournies sans protocole, d'où la normalisation.
+    normalizeBase(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
+    normalizeBase(process.env.VERCEL_URL) ??
+    'http://localhost:3100';
+
   if (!path) return base;
   return `${base}${path.startsWith('/') ? path : `/${path}`}`;
 }

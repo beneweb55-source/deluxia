@@ -25,13 +25,27 @@ export const metadata: Metadata = {
  */
 export const revalidate = 600;
 
-export default async function HomePage() {
-  // Trois requêtes indépendantes : lancées en parallèle plutôt qu'en séquence.
+/**
+ * Chargement du catalogue tolérant à la panne.
+ *
+ * La page d'accueil est le premier point de contact et le plus visité : elle ne
+ * doit jamais tomber en « erreur serveur » à cause d'un simple hoquet de la base
+ * — typiquement le réveil d'une instance serverless endormie. Si une section
+ * n'est pas lisible, on l'affiche vide ; le hero, les univers, la promesse de
+ * livraison et le pied de page restent en place, et la page se régénère toute
+ * seule au prochain passage.
+ */
+async function loadHomeCatalogue() {
   const [featured, novelties, promos] = await Promise.all([
-    getFeaturedProducts(8),
-    getNewProducts(8),
-    getPromoProducts(4),
+    getFeaturedProducts(8).catch(() => []),
+    getNewProducts(8).catch(() => []),
+    getPromoProducts(4).catch(() => []),
   ]);
+  return { featured, novelties, promos };
+}
+
+export default async function HomePage() {
+  const { featured, novelties, promos } = await loadHomeCatalogue();
 
   return (
     <>

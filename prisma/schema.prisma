@@ -5,6 +5,11 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["fullTextSearchPostgres"]
+  // `native` couvre la machine de développement ; `rhel-openssl-3.0.x` est le
+  // moteur du runtime serverless de Vercel. Sans cette seconde cible, un cache
+  // de build Vercel peut servir un moteur compilé pour la mauvaise plateforme,
+  // ce qui fait échouer toute requête à la base — donc toute page dynamique.
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
