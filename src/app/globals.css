@@ -201,7 +201,7 @@
 
   /* Le mot-clé de l'identité : lettrage large et léger. */
   .wordmark {
-    font-weight: 300;
+    font-weight: 700;
     letter-spacing: 0.34em;
     /* Compense l'espacement final pour un centrage optique exact. */
     text-indent: 0.34em;

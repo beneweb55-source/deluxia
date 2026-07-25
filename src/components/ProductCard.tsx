@@ -193,7 +193,7 @@ export function ProductCard({
         {/* ── Informations ─────────────────────────────────────────────── */}
         <div className="pt-4">
           <p className="text-[0.625rem] uppercase tracking-[0.16em] text-ash">{product.category.name}</p>
-          <h3 className="mt-1.5 text-[0.9375rem] font-normal leading-snug text-ink">{product.name}</h3>
+          <h3 className="mt-1.5 text-[0.9375rem] font-bold leading-snug text-ink">{product.name}</h3>
           {product.subtitle && (
             <p className="mt-1 line-clamp-1 text-[0.8125rem] text-graphite">{product.subtitle}</p>
           )}

@@ -122,7 +122,7 @@ export default async function ProductPage({ params }: PageProps) {
             le bouton d'achat n'est jamais hors d'atteinte sur grand écran. */}
         <div className="lg:sticky lg:top-28 lg:self-start">
           <p className="eyebrow">{product.category.name}</p>
-          <h1 className="mt-3 text-[clamp(1.75rem,3.5vw,2.75rem)] font-light leading-[1.08] tracking-[-0.03em] text-ink">
+          <h1 className="mt-3 text-[clamp(1.75rem,3.5vw,2.75rem)] font-bold leading-[1.08] tracking-[-0.03em] text-ink">
             {product.name}
           </h1>
           {product.subtitle && (
