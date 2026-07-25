@@ -1,0 +1,384 @@
+// DELUXIA — schéma de données
+// Toutes les valeurs monétaires sont des entiers en dinars algériens (DA).
+// L'Algérie n'utilise pas de centimes dans le commerce courant : pas de décimales.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Administration
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         AdminRole @default(ADMIN)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions AdminSession[]
+
+  @@map("admin_users")
+}
+
+enum AdminRole {
+  OWNER // accès total, y compris gestion des comptes
+  ADMIN // gestion boutique
+}
+
+model AdminSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("admin_sessions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Catalogue
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Category {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  tagline     String? // phrase courte affichée sur la carte catégorie
+  description String?
+  collectionId String?
+  imageUrl    String? // vide -> placeholder premium généré
+  position    Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  collection  Collection? @relation(fields: [collectionId], references: [id], onDelete: Restrict)
+  products    Product[]
+
+  @@index([isActive, position])
+  @@index([collectionId, isActive])
+  @@map("categories")
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  tagline     String?
+  description String?  @db.Text
+  position    Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categories  Category[]
+
+  @@index([isActive, position])
+  @@map("collections")
+}
+
+model Product {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  subtitle    String? // ligne d'accroche sous le titre
+  description String  @db.Text
+  composition String? @db.Text // matières
+  care        String? @db.Text // entretien
+  sku         String  @unique
+
+  price        Int // prix de vente en DA
+  comparePrice Int? // prix barré (promotion) — doit être > price
+
+  categoryId String
+
+  images String[] @default([]) // URLs; vide -> placeholder premium généré
+
+  isActive   Boolean @default(true)
+  isFeatured Boolean @default(false)
+  isNew      Boolean @default(false)
+  position   Int     @default(0)
+
+  viewCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category   Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  variants   ProductVariant[]
+  orderItems OrderItem[]
+
+  @@index([isActive, isFeatured])
+  @@index([isActive, isNew])
+  @@index([categoryId, isActive])
+  @@map("products")
+}
+
+/// Déclinaison achetable : une taille × une couleur, avec son propre stock.
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  size      String // "39", "40", "M", "TU"…
+  color     String // libellé affiché : "Noir", "Ivoire"…
+  colorHex  String  @default("#0A0A0A")
+  stock     Int     @default(0)
+  position  Int     @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, size, color])
+  @@index([productId])
+  @@map("product_variants")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Livraison — grille ZR Express, éditable depuis l'admin
+// ─────────────────────────────────────────────────────────────────────────────
+
+model DeliveryRate {
+  code       Int     @id // code officiel de la wilaya (1 → 58)
+  name       String
+  nameAr     String?
+  homeFee    Int // livraison à domicile (DA)
+  deskFee    Int // livraison en bureau / stop desk (DA)
+  hasDesk    Boolean @default(true) // false -> l'option bureau est masquée côté client
+  returnFee  Int     @default(0) // frais de retour facturés au marchand (interne)
+  isServed   Boolean @default(true) // false -> wilaya non desservie
+  deliveryMin Int    @default(2) // délai indicatif (jours)
+  deliveryMax Int    @default(5)
+
+  updatedAt DateTime @updatedAt
+
+  @@index([isServed])
+  @@map("delivery_rates")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Clients & commandes
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Customer {
+  id           String  @id @default(cuid())
+  phone        String  @unique
+  passwordHash String?
+  firstName    String
+  lastName     String
+  email        String? @unique
+
+  // Dernière adresse connue — pré-remplit le checkout lors d'une nouvelle commande.
+  wilayaCode Int?
+  commune    String?
+  address    String?
+
+  totalOrders Int @default(0)
+  totalSpent  Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders   Order[]
+  sessions CustomerSession[]
+
+  @@map("customers")
+}
+
+model CustomerSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  customer Customer @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("customer_sessions")
+}
+
+model Order {
+  id        String @id @default(cuid())
+  reference String @unique // DLX-2601-0001
+
+  customerId String?
+
+  // Coordonnées figées au moment de la commande (une commande est un document).
+  firstName String
+  lastName  String
+  phone     String
+  phoneAlt  String?
+
+  wilayaCode Int
+  wilayaName String
+  commune    String
+  address    String
+  notes      String? @db.Text
+
+  deliveryType DeliveryType @default(DOMICILE)
+
+  subtotal    Int
+  deliveryFee Int
+  discount    Int          @default(0)
+  total       Int
+  paymentType PaymentType  @default(COD)
+
+  status      OrderStatus @default(EN_ATTENTE)
+  adminNote   String?     @db.Text
+  cancelReason String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  confirmedAt DateTime?
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+
+  customer Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+  events   OrderStatusEvent[]
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([phone])
+  @@map("orders")
+}
+
+enum DeliveryType {
+  DOMICILE
+  STOPDESK
+}
+
+enum PaymentType {
+  COD // paiement à la livraison — seul mode actif
+  CIB // prévu
+  EDAHABIA // prévu
+}
+
+enum OrderStatus {
+  EN_ATTENTE
+  CONFIRMEE
+  PREPARATION
+  EXPEDIEE
+  LIVREE
+  ANNULEE
+}
+
+/// Ligne de commande : recopie le produit pour rester lisible même si
+/// le produit est modifié ou supprimé plus tard.
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+
+  productId   String?
+  productName String
+  productSlug String
+  imageUrl    String?
+
+  size  String
+  color String
+
+  unitPrice Int
+  quantity  Int
+  lineTotal Int
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model OrderStatusEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  author    String? // nom de l'admin
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_status_events")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Réglages boutique (clé/valeur JSON) — édités depuis l'admin
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+/// Visuel téléversé depuis l'administration.
+///
+/// Les octets sont stockés en base plutôt que sur le disque : l'hébergement
+/// d'une application Next.js est très souvent en lecture seule (Vercel et
+/// assimilés), et un fichier écrit sur le disque disparaîtrait au déploiement
+/// suivant. La base est le seul support de stockage dont on soit certain qu'il
+/// survive, et elle ne demande aucun compte tiers à créer par la cliente.
+///
+/// Les images sont redimensionnées et converties en WebP par le navigateur
+/// avant l'envoi : chacune pèse quelques centaines de kilo-octets, ce qui reste
+/// sans effet sensible sur la taille de la base.
+model MediaAsset {
+  id        String   @id @default(cuid())
+  filename  String
+  mimeType  String
+  width     Int
+  height    Int
+  size      Int // en octets
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@map("media_assets")
+}
+
+/// Inscriptions newsletter — la base est prête, l'envoi viendra en V2.
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("newsletter_subscribers")
+}
+
+/// Messages du formulaire de contact.
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String
+  subject   String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead, createdAt])
+  @@map("contact_messages")
+}

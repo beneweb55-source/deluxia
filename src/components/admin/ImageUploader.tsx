@@ -1,0 +1,316 @@
+'use client';
+
+import Image from 'next/image';
+import { useCallback, useId, useRef, useState, type DragEvent } from 'react';
+import { ArrowLeftIcon, ArrowRightIcon, PlusIcon, TrashIcon } from '@/components/icons';
+import { cn } from '@/lib/utils';
+
+/**
+ * Téléversement des visuels produit.
+ *
+ * Le champ est un `<input type="file">` natif : sur ordinateur il ouvre
+ * l'explorateur du système, sur mobile il propose la galerie et l'appareil
+ * photo. L'attribut `capture` est volontairement omis — le préciser forcerait
+ * l'appareil photo et empêcherait de choisir une photo déjà prise, ce qui est
+ * pourtant le cas le plus fréquent.
+ *
+ * Chaque image est **redimensionnée et convertie en WebP par le navigateur**
+ * avant l'envoi. Une photo de téléphone de 4 Mo devient un fichier de 150 à
+ * 300 Ko : l'envoi devient supportable en 3G, et la base ne gonfle pas.
+ */
+
+/** Côté le plus long après redimensionnement. Au-delà, l'œil ne voit plus rien. */
+const MAX_EDGE = 1600;
+const QUALITY = 0.85;
+const MAX_IMAGES = 8;
+
+interface UploadState {
+  name: string;
+  status: 'compression' | 'envoi' | 'erreur';
+  message?: string;
+}
+
+export function ImageUploader({
+  name = 'images',
+  initial = [],
+  productName,
+}: {
+  /** Nom du champ transmis au formulaire. */
+  name?: string;
+  initial?: string[];
+  productName: string;
+}) {
+  const [urls, setUrls] = useState<string[]>(initial);
+  const [uploads, setUploads] = useState<UploadState[]>([]);
+  const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
+
+  const handleFiles = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      setError(null);
+
+      const room = MAX_IMAGES - urls.length;
+      if (room <= 0) {
+        setError(`Maximum ${MAX_IMAGES} visuels par produit.`);
+        return;
+      }
+
+      const selected = Array.from(files)
+        .filter((file) => file.type.startsWith('image/'))
+        .slice(0, room);
+
+      if (selected.length === 0) {
+        setError('Choisissez des fichiers image (JPEG, PNG ou WebP).');
+        return;
+      }
+
+      for (const file of selected) {
+        setUploads((current) => [...current, { name: file.name, status: 'compression' }]);
+
+        try {
+          const compressed = await compress(file);
+
+          setUploads((current) =>
+            current.map((item) =>
+              item.name === file.name ? { ...item, status: 'envoi' } : item,
+            ),
+          );
+
+          const body = new FormData();
+          body.append('file', compressed, compressed.name);
+
+          const response = await fetch('/api/admin/media', { method: 'POST', body });
+          const data = (await response.json()) as { url?: string; message?: string };
+
+          if (!response.ok || !data.url) {
+            throw new Error(data.message ?? 'Envoi refusé.');
+          }
+
+          setUrls((current) => [...current, data.url!]);
+          setUploads((current) => current.filter((item) => item.name !== file.name));
+        } catch (cause) {
+          const message = cause instanceof Error ? cause.message : 'Envoi impossible.';
+          setUploads((current) =>
+            current.map((item) =>
+              item.name === file.name ? { ...item, status: 'erreur', message } : item,
+            ),
+          );
+        }
+      }
+
+      // Réinitialise le champ pour permettre de re-sélectionner le même fichier.
+      if (inputRef.current) inputRef.current.value = '';
+    },
+    [urls.length],
+  );
+
+  const move = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= urls.length) return;
+
+    setUrls((current) => {
+      const next = [...current];
+      const [moved] = next.splice(index, 1);
+      if (moved) next.splice(target, 0, moved);
+      return next;
+    });
+  };
+
+  const remove = (index: number) => setUrls((current) => current.filter((_, i) => i !== index));
+
+  const onDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragging(false);
+    void handleFiles(event.dataTransfer.files);
+  };
+
+  return (
+    <div>
+      {/* La valeur transmise au serveur : une URL par ligne, format déjà
+          attendu par l'action d'enregistrement du produit. */}
+      <input type="hidden" name={name} value={urls.join('\n')} />
+
+      {/* ── Zone de dépôt ─────────────────────────────────────────────────── */}
+      <div
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        className={cn(
+          'border border-dashed p-6 text-center transition-colors duration-200',
+          dragging ? 'border-ink bg-mist' : 'border-line',
+        )}
+      >
+        <input
+          ref={inputRef}
+          id={inputId}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          multiple
+          onChange={(event) => void handleFiles(event.target.files)}
+          className="sr-only"
+        />
+
+        <label
+          htmlFor={inputId}
+          className="inline-flex h-11 cursor-pointer items-center gap-2.5 border border-ink bg-ink px-6 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-paper transition-opacity hover:opacity-80"
+        >
+          <PlusIcon className="h-3.5 w-3.5" />
+          Ajouter des photos
+        </label>
+
+        <p className="mt-4 text-[0.8125rem] leading-relaxed text-graphite">
+          Depuis votre téléphone, choisissez dans la galerie ou prenez la photo directement.
+          <span className="hidden sm:inline"> Sur ordinateur, vous pouvez aussi déposer les fichiers ici.</span>
+        </p>
+        <p className="mt-1.5 text-[0.75rem] text-ash">
+          {urls.length} / {MAX_IMAGES} visuels · JPEG, PNG ou WebP · compression automatique
+        </p>
+      </div>
+
+      {error && (
+        <p role="alert" className="mt-4 border-l-2 border-ink pl-4 text-[0.8125rem] text-ink">
+          {error}
+        </p>
+      )}
+
+      {/* ── Envois en cours ───────────────────────────────────────────────── */}
+      {uploads.length > 0 && (
+        <ul className="mt-4 space-y-2">
+          {uploads.map((upload) => (
+            <li
+              key={upload.name}
+              className="flex items-center justify-between gap-4 border border-line px-4 py-2.5 text-[0.8125rem]"
+            >
+              <span className="truncate text-graphite">{upload.name}</span>
+              <span className={cn('shrink-0', upload.status === 'erreur' ? 'text-ink' : 'text-ash')}>
+                {upload.status === 'compression' && 'Compression…'}
+                {upload.status === 'envoi' && 'Envoi…'}
+                {upload.status === 'erreur' && (upload.message ?? 'Échec')}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* ── Visuels enregistrés ───────────────────────────────────────────── */}
+      {urls.length > 0 && (
+        <>
+          <p className="mt-7 text-[0.8125rem] text-graphite">
+            Le premier visuel sert de photo principale dans la boutique. Utilisez les flèches pour
+            changer l&rsquo;ordre.
+          </p>
+
+          <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {urls.map((url, index) => (
+              <li key={url} className="group relative">
+                <div className="relative aspect-4/5 overflow-hidden bg-mist">
+                  <Image
+                    src={url}
+                    alt={`${productName} — visuel ${index + 1}`}
+                    fill
+                    sizes="(max-width: 640px) 45vw, 20vw"
+                    className="object-cover"
+                    unoptimized
+                  />
+
+                  {index === 0 && (
+                    <span className="absolute left-2 top-2 bg-ink px-2 py-1 text-[0.5625rem] font-medium uppercase tracking-[0.14em] text-paper">
+                      Principale
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-2 flex items-center justify-between gap-1">
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => move(index, -1)}
+                      disabled={index === 0}
+                      aria-label={`Déplacer le visuel ${index + 1} vers la gauche`}
+                      className="inline-flex h-8 w-8 items-center justify-center border border-line text-graphite transition-colors hover:border-ink hover:text-ink disabled:opacity-30"
+                    >
+                      <ArrowLeftIcon className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => move(index, 1)}
+                      disabled={index === urls.length - 1}
+                      aria-label={`Déplacer le visuel ${index + 1} vers la droite`}
+                      className="inline-flex h-8 w-8 items-center justify-center border border-line text-graphite transition-colors hover:border-ink hover:text-ink disabled:opacity-30"
+                    >
+                      <ArrowRightIcon className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => remove(index)}
+                    aria-label={`Retirer le visuel ${index + 1}`}
+                    className="inline-flex h-8 w-8 items-center justify-center border border-line text-graphite transition-colors hover:border-ink hover:text-ink"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {urls.length === 0 && uploads.length === 0 && (
+        <p className="mt-5 border-l-2 border-line pl-4 text-[0.8125rem] leading-relaxed text-graphite">
+          Sans photo, la boutique affiche une composition DELUXIA générée automatiquement. Le produit
+          reste vendable — mais une vraie photo convertit toujours mieux.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Redimensionne et convertit une image dans le navigateur.
+ *
+ * `createImageBitmap` décode l'image hors du fil principal, ce qui évite de
+ * figer l'interface sur une photo de 12 mégapixels. En cas d'échec — format
+ * exotique, navigateur ancien — le fichier d'origine est envoyé tel quel : mieux
+ * vaut un envoi plus lourd qu'un téléversement impossible.
+ */
+async function compress(file: File): Promise<File> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d');
+    if (!context) return file;
+
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/webp', QUALITY);
+    });
+
+    // Un navigateur sans encodeur WebP renvoie du PNG, souvent plus lourd que
+    // l'original : dans ce cas on conserve le fichier de départ.
+    if (!blob || blob.type !== 'image/webp' || blob.size >= file.size) return file;
+
+    const base = file.name.replace(/\.[^.]+$/, '') || 'visuel';
+    return new File([blob], `${base}.webp`, { type: 'image/webp' });
+  } catch {
+    return file;
+  }
+}

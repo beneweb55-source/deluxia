@@ -1,0 +1,353 @@
+@import 'tailwindcss';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DELUXIA — Design System
+   Monochrome absolu. L'élégance vient de l'espace, du rythme typographique
+   et de la retenue des mouvements, jamais de la couleur.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme {
+  /* ── Palette ─────────────────────────────────────────────────────────────
+     Six valeurs, pas une de plus. Toute nouvelle nuance doit être justifiée. */
+  --color-ink: #0a0a0a; /* noir principal — textes, boutons pleins */
+  --color-ink-soft: #1c1c1c; /* noir adouci — survols */
+  --color-graphite: #4a4a4a; /* gris foncé — textes secondaires */
+  /* Gris moyen — libellés, métadonnées, fils d'Ariane.
+     #6E6E6E et non un gris plus clair : c'est la valeur la plus claire qui
+     atteigne encore 4,5:1 à la fois sur le blanc (5,10) et sur les sections
+     grises (4,63). Un ton au-dessus, et des informations réelles — « Non
+     desservie », les en-têtes de tableau — passaient sous le seuil WCAG AA. */
+  --color-ash: #6e6e6e;
+  --color-line: #e6e6e3; /* filets, bordures */
+  --color-mist: #f4f4f2; /* gris très clair — fonds de section */
+  --color-paper: #ffffff; /* blanc — fond principal */
+
+  /* ── Typographie ───────────────────────────────────────────────────────── */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --text-hero: clamp(2.75rem, 11vw, 10rem);
+  --text-hero--line-height: 0.9;
+  --text-hero--letter-spacing: -0.045em;
+
+  --text-display: clamp(2rem, 6vw, 4.5rem);
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.035em;
+
+  --text-title: clamp(1.5rem, 3.2vw, 2.5rem);
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.025em;
+
+  /* Petites capitales espacées : la signature « maison de luxe ». */
+  --text-eyebrow: 0.6875rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-eyebrow--letter-spacing: 0.22em;
+
+  /* ── Rythme ──────────────────────────────────────────────────────────── */
+  --spacing-section: clamp(4.5rem, 10vw, 9rem);
+  --spacing-gutter: clamp(1.25rem, 4vw, 4rem);
+
+  /* ── Mouvement ───────────────────────────────────────────────────────────
+     Une seule courbe pour tout le site : la cohérence du timing est ce qui
+     distingue un site « cher » d'un site « animé ». */
+  --ease-luxe: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --animate-reveal: reveal 1s var(--ease-luxe) both;
+  --animate-fade-in: fade-in 0.6s var(--ease-soft) both;
+  --animate-slide-up: slide-up 0.5s var(--ease-luxe) both;
+  --animate-marquee: marquee 42s linear infinite;
+  --animate-shimmer: shimmer 2.4s ease-in-out infinite;
+}
+
+@keyframes reveal {
+  from { opacity: 0; transform: translate3d(0, 28px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+@keyframes shimmer {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.7; }
+}
+/* Trait qui descend le long de l'indicateur de défilement du hero. */
+@keyframes scroll-cue {
+  0% { transform: translateY(-100%); }
+  60%, 100% { transform: translateY(300%); }
+}
+
+/* ═══ Thème sombre ═══════════════════════════════════════════════════════════
+   Inversion franche : la marque reste strictement noir & blanc. */
+[data-theme='dark'] {
+  --color-ink: #f7f7f5;
+  --color-ink-soft: #e4e4e0;
+  --color-graphite: #b4b4b0;
+  --color-ash: #7e7e7a;
+  --color-line: #262625;
+  --color-mist: #141413;
+  --color-paper: #0a0a0a;
+}
+
+/* ═══ Base ═══════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    /* Empêche le layout shift causé par la scrollbar sous Windows */
+    scrollbar-gutter: stable;
+    /* Compense le header collant lors des ancres. */
+    scroll-padding-top: 6rem;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Empêche tout débordement horizontal, quel que soit le composant. */
+    overflow-x: hidden;
+  }
+
+  /* Focus visible WCAG 2.4.7 AA — Double contour pour contraste sur fond clair ET sombre. */
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-paper);
+    border-radius: 2px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Les images ne débordent jamais de leur conteneur. */
+  img,
+  svg,
+  video {
+    max-width: 100%;
+    height: auto;
+  }
+
+  ::selection {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  /* Masque les flèches des champs numériques (quantités). */
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    appearance: textfield;
+  }
+
+  /* Barre de défilement discrète, cohérente avec la charte. */
+  @supports (scrollbar-width: thin) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-line) transparent;
+    }
+  }
+}
+
+/* ═══ Composants ═════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* Conteneur éditorial : large, aéré, jamais collé aux bords. */
+  .shell {
+    width: 100%;
+    max-width: 96rem;
+    margin-inline: auto;
+    padding-inline: var(--spacing-gutter);
+  }
+
+  .shell-tight {
+    width: 100%;
+    max-width: 68rem;
+    margin-inline: auto;
+    padding-inline: var(--spacing-gutter);
+  }
+
+  /* Surtitre en petites capitales espacées. */
+  .eyebrow {
+    font-size: var(--text-eyebrow);
+    line-height: var(--text-eyebrow--line-height);
+    letter-spacing: var(--text-eyebrow--letter-spacing);
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--color-ash);
+  }
+
+  /* Le mot-clé de l'identité : lettrage large et léger. */
+  .wordmark {
+    font-weight: 300;
+    letter-spacing: 0.34em;
+    /* Compense l'espacement final pour un centrage optique exact. */
+    text-indent: 0.34em;
+    text-transform: uppercase;
+  }
+
+  /* Lien avec soulignement qui se déploie depuis la gauche. */
+  .link-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .link-underline::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 100%;
+    height: 1px;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.5s var(--ease-luxe);
+  }
+  .link-underline:hover::after,
+  .link-underline:focus-visible::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  /* Filet horizontal fin, utilisé comme séparateur éditorial. */
+  .rule {
+    height: 1px;
+    background-color: var(--color-line);
+  }
+}
+
+/* ═══ Utilitaires ════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  /* Apparition à l'ouverture de page (hero, en-têtes de section).
+
+     Règle de sûreté : le contenu est visible PAR DÉFAUT ; l'animation n'est
+     ajoutée que si l'utilisateur accepte le mouvement. Faire dépendre la
+     visibilité d'une animation qui doit se terminer est un piège classique —
+     mouvement réduit, onglet en arrière-plan, moteur qui diffère les animations,
+     et le texte principal reste invisible. Ici, dans le pire des cas, il
+     s'affiche simplement sans transition. */
+  .enter {
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .enter {
+      animation: reveal 0.9s var(--ease-luxe) both;
+      animation-delay: var(--enter-delay, 0ms);
+    }
+  }
+
+  /* Apparition au défilement. L'élément est masqué jusqu'à ce que
+     l'IntersectionObserver lui ajoute [data-revealed]. Si JavaScript est
+     indisponible, `.no-js` rétablit la visibilité (voir <html> dans layout). */
+  .reveal {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+    transition:
+      opacity 1s var(--ease-luxe),
+      transform 1s var(--ease-luxe);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+  .reveal[data-revealed='true'] {
+    opacity: 1;
+    transform: none;
+  }
+  .no-js .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Masque de dégradé pour les rails défilables. */
+  .fade-edges {
+    mask-image: linear-gradient(to right, transparent, black 3rem, black calc(100% - 3rem), transparent);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Empêche le décalage de la page quand un tiroir verrouille le défilement. */
+  .scroll-locked {
+    overflow: hidden;
+    padding-right: var(--scrollbar-width, 0px);
+  }
+}
+
+/* ═══ Accessibilité — mouvement réduit ═══════════════════════════════════════
+   Respect strict de prefers-reduced-motion : le contenu reste intégralement
+   accessible, seules les animations disparaissent. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    /* Neutraliser aussi les délais : une animation raccourcie mais toujours
+       différée laisserait l'élément figé sur son image de départ. */
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ═══ Impression — récapitulatif de commande & bons de préparation ═══════════ */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  a[href]::after {
+    content: '';
+  }
+  .print-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+}
+
+.print-only {
+  display: none;
+}
