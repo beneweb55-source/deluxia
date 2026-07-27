@@ -11,6 +11,7 @@ import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { organizationJsonLd } from '@/lib/seo';
 import { getNavCollections } from '@/lib/catalog';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
+import { MetaPixel } from '@/components/analytics/MetaPixel';
 
 /** Habillage de la boutique : bandeau, en-tête, contenu, pied de page, panier. */
 export default async function BoutiqueLayout({ children }: { children: ReactNode }) {
@@ -63,6 +64,9 @@ export default async function BoutiqueLayout({ children }: { children: ReactNode
           {/* Identité de la marque pour les moteurs de recherche — une seule fois,
               au niveau de la boutique, jamais dans l'administration. */}
           <JsonLd data={organizationJsonLd()} />
+          {/* Suivi publicitaire — inactif tant que l'ID de Pixel n'est pas posé.
+              Uniquement sur la boutique : l'administration n'est jamais tracée. */}
+          <MetaPixel />
           <AnnouncementBanner />
           <Header navLinks={navLinks} />
 

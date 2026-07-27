@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { PIXEL_CURRENCY, trackPixel } from '@/lib/pixel';
 
 /**
  * Panier — état conservé côté navigateur et persisté dans localStorage.
@@ -151,6 +152,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
 
     setIsOpen(true);
+
+    // Point de passage unique de tous les ajouts au panier (carte produit,
+    // fiche détaillée, ajout rapide) : l'événement Meta Pixel est donc émis ici
+    // une seule fois pour toute l'application. No-op si le tracking est inactif.
+    trackPixel('AddToCart', {
+      value: item.unitPrice * wanted,
+      currency: PIXEL_CURRENCY,
+      content_type: 'product',
+      contents: [{ id: item.slug, quantity: wanted, item_price: item.unitPrice }],
+    });
   }, []);
 
   const setQuantity = useCallback((key: string, quantity: number) => {

@@ -99,6 +99,14 @@ export async function createSession(
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
+    // `maxAge` (durée relative, en secondes) plutôt que le seul `expires` (date
+    // absolue) : une date absolue dépend de l'horloge du navigateur. Si celle-ci
+    // est en retard — fréquent sur un téléphone mal réglé — une date `expires`
+    // peut être lue comme déjà passée, et le cookie devient éphémère : la gérante
+    // se retrouve déconnectée dès qu'elle ferme l'onglet. `maxAge` est immunisé
+    // contre ce décalage. On garde `expires` en second pour les rares clients qui
+    // ne gèrent pas `maxAge`.
+    maxAge: Math.floor(SESSION_TTL_MS / 1000),
     expires: expiresAt,
   });
 

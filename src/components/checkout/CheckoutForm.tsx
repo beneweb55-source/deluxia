@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { ProductVisual } from '@/components/ProductVisual';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Field';
@@ -12,6 +12,7 @@ import { formatPrice } from '@/lib/format';
 import { formatPhoneInput, orderSchema, type OrderFormFields } from '@/lib/order-schema';
 import { findOption, quoteDelivery, type DeliveryOption } from '@/lib/delivery-quote';
 import { getCommunes } from '@/data/wilayas';
+import { PIXEL_CURRENCY, trackPixel } from '@/lib/pixel';
 import { cn } from '@/lib/utils';
 
 const EMPTY: OrderFormFields = {
@@ -77,6 +78,29 @@ export function CheckoutForm({ options }: { options: DeliveryOption[] }) {
       setValues((current) => ({ ...current, deliveryType: 'DOMICILE' }));
     }
   }, [wilaya, values.deliveryType]);
+
+  /**
+   * InitiateCheckout (Meta Pixel) — émis une seule fois, dès que le panier
+   * hydraté contient au moins un article. Le verrou `useRef` évite de recompter
+   * l'entrée dans le tunnel à chaque frappe. No-op si le tracking est inactif.
+   */
+  const checkoutTracked = useRef(false);
+  useEffect(() => {
+    if (checkoutTracked.current || !cart.ready || cart.count === 0) return;
+    checkoutTracked.current = true;
+
+    trackPixel('InitiateCheckout', {
+      value: cart.subtotal,
+      currency: PIXEL_CURRENCY,
+      num_items: cart.count,
+      content_type: 'product',
+      contents: cart.lines.map((line) => ({
+        id: line.slug,
+        quantity: line.quantity,
+        item_price: line.unitPrice,
+      })),
+    });
+  }, [cart.ready, cart.count, cart.subtotal, cart.lines]);
 
   /**
    * Valide un champ isolé contre le schéma partagé avec le serveur.

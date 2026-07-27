@@ -49,6 +49,10 @@ export async function createCustomerSession(
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
+    // Durée relative (`maxAge`, en secondes) pour résister à une horloge de
+    // navigateur mal réglée, qui ferait passer une date `expires` pour périmée et
+    // déconnecterait la cliente à la fermeture de l'onglet. Voir `@/lib/auth`.
+    maxAge: Math.floor(SESSION_TTL_MS / 1000),
     expires: expiresAt,
   });
 

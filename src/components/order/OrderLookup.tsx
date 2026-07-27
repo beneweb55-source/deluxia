@@ -5,6 +5,7 @@ import { OrderDetail } from '@/components/order/OrderDetail';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { BRAND } from '@/lib/brand';
+import { PIXEL_CURRENCY, trackPixel } from '@/lib/pixel';
 import type { PublicOrder } from '@/lib/order-status';
 
 const SESSION_KEY = 'deluxia.lastOrder';
@@ -78,6 +79,34 @@ export function OrderLookup({
       // Session illisible : on retombe sur la saisie manuelle.
     }
   }, [fixedReference, autoTried, lookup]);
+
+  // Événement d'achat Meta Pixel — uniquement sur la page de confirmation
+  // (`celebrate`), et une seule fois par commande : la référence sert de verrou
+  // en sessionStorage pour qu'un rafraîchissement ne compte pas deux ventes.
+  useEffect(() => {
+    if (!celebrate || !order) return;
+
+    const flag = `deluxia.purchaseTracked.${order.reference}`;
+    try {
+      if (sessionStorage.getItem(flag)) return;
+      sessionStorage.setItem(flag, '1');
+    } catch {
+      // sessionStorage indisponible (navigation privée) : on émet quand même,
+      // quitte à risquer un doublon très rare, plutôt que de perdre la vente.
+    }
+
+    trackPixel('Purchase', {
+      value: order.total,
+      currency: PIXEL_CURRENCY,
+      content_type: 'product',
+      contents: order.items.map((item) => ({
+        id: item.productSlug,
+        quantity: item.quantity,
+        item_price: item.unitPrice,
+      })),
+      num_items: order.items.reduce((sum, item) => sum + item.quantity, 0),
+    });
+  }, [celebrate, order]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

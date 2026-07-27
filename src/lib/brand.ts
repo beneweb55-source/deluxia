@@ -74,20 +74,20 @@ export const FOOTER_LINKS = [
 /** Arguments de réassurance affichés sous le hero et en pied de page. */
 export const TRUST_POINTS = [
   {
+    title: 'Qualité certifiée',
+    body: 'Chaque modèle est contrôlé avant expédition : matières, finitions et tenue dans le temps.',
+  },
+  {
+    title: 'Livraison partout en Algérie',
+    body: 'À domicile ou en bureau de retrait, avec un suivi assuré par notre transporteur partenaire.',
+  },
+  {
     title: 'Paiement à la livraison',
     body: "Vous ne réglez qu'au moment où le colis est entre vos mains. Aucun paiement en ligne.",
   },
   {
-    title: "Livraison dans toute l'Algérie",
-    body: 'À domicile ou en bureau de retrait, avec un suivi assuré par notre transporteur partenaire.',
-  },
-  {
-    title: 'Échange sous 24 heures',
+    title: 'Échange disponible',
     body: "Une pointure qui ne convient pas ? L'échange est possible sous 24 h après réception.",
-  },
-  {
-    title: 'Pièces sélectionnées',
-    body: 'Chaque modèle est contrôlé avant expédition. Matières, finitions, tenue dans le temps.',
   },
 ] as const;
 

@@ -2,21 +2,32 @@ import type { CSSProperties } from 'react';
 import { ExchangeIcon, ShieldIcon, StarIcon, TruckIcon } from '@/components/icons';
 import { TRUST_POINTS } from '@/lib/brand';
 
-const ICONS = [ShieldIcon, TruckIcon, ExchangeIcon, StarIcon] as const;
+// Une icône par engagement, dans le même ordre que `TRUST_POINTS` :
+// ✨ qualité → étoile, 🚚 livraison → camion, 💳 paiement → bouclier
+// (paiement sûr, réglé en main propre), 🔄 échange → double flèche.
+const ICONS = [StarIcon, TruckIcon, ShieldIcon, ExchangeIcon] as const;
 
 /**
- * Bandeau de réassurance, placé juste sous le hero.
+ * Bloc « Pourquoi DELUXIA ? », placé juste sous le hero.
  *
  * L'objection dominante de l'achat en ligne en Algérie est la confiance :
  * payer d'avance, ne pas pouvoir essayer, ne pas savoir si le colis arrivera.
  * Ces quatre réponses sont donc placées avant le premier produit, et non
- * reléguées en pied de page où elles ne seraient jamais lues.
+ * reléguées en pied de page où elles ne seraient jamais lues. Le titre les
+ * rassemble sous une promesse de marque explicite.
  */
 export function TrustStrip() {
   return (
-    <section aria-label="Nos engagements" className="border-y border-line bg-mist">
+    <section aria-labelledby="pourquoi-deluxia" className="border-y border-line bg-mist">
       <div className="shell">
-        <ul className="grid gap-px sm:grid-cols-2 lg:grid-cols-4">
+        <h2
+          id="pourquoi-deluxia"
+          className="reveal pt-12 text-center text-[1.5rem] font-light tracking-[-0.02em] text-ink sm:pt-16 sm:text-[1.75rem]"
+        >
+          Pourquoi DELUXIA ?
+        </h2>
+
+        <ul className="grid gap-px pt-6 sm:grid-cols-2 lg:grid-cols-4">
           {TRUST_POINTS.map((point, index) => {
             const Icon = ICONS[index] ?? ShieldIcon;
             return (

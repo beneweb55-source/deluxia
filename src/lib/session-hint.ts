@@ -32,12 +32,20 @@ export interface ProfileHint {
 export async function setProfileHint(hint: ProfileHint, expiresAt: Date): Promise<void> {
   const store = await cookies();
 
+  // L'indice doit vivre exactement aussi longtemps que la session réelle. On le
+  // pose donc avec la même stratégie de durée : `maxAge` relatif (immunisé contre
+  // une horloge navigateur en retard) doublé de `expires`. Sans cela, l'en-tête
+  // afficherait « Se connecter » alors que la session serveur est toujours
+  // valide — exactement le symptôme « je dois me reconnecter ».
+  const maxAge = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
+
   store.set(PROFILE_HINT_COOKIE, encodeURIComponent(JSON.stringify(hint)), {
     // Volontairement lisible par le navigateur : c'est tout l'intérêt.
     httpOnly: false,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
+    maxAge,
     expires: expiresAt,
   });
 }
