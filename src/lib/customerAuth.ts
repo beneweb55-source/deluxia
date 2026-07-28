@@ -78,6 +78,29 @@ export async function getSessionCustomer(): Promise<SessionCustomer | null> {
   return session.customer;
 }
 
+/**
+ * Date d'expiration de la session cliente en cours, ou `null` si absente/expirée.
+ *
+ * Sert à réaligner l'indice de session (le cookie lisible qui porte le prénom)
+ * sur la durée réelle de la session : après une édition de profil, on ne veut pas
+ * repousser l'indice à 30 jours « à partir de maintenant » alors que la session,
+ * elle, expire à sa date d'origine — sinon l'en-tête afficherait « Bonjour … »
+ * pour une session déjà morte.
+ */
+export async function getCustomerSessionExpiry(): Promise<Date | null> {
+  const store = await cookies();
+  const token = store.get(CUSTOMER_SESSION_COOKIE)?.value;
+  if (!token) return null;
+
+  const session = await prisma.customerSession.findUnique({
+    where: { tokenHash: hashToken(token) },
+    select: { expiresAt: true },
+  });
+
+  if (!session || session.expiresAt < new Date()) return null;
+  return session.expiresAt;
+}
+
 /** Détruit la session courante côté base et côté navigateur. */
 export async function destroyCustomerSession(): Promise<void> {
   const store = await cookies();

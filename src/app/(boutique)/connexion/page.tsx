@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { LoginForm } from '@/app/(boutique)/connexion/LoginForm';
+import { getCurrentUser } from '@/app/(boutique)/_actions/auth';
 import { AuthLayout } from '@/components/account/AuthLayout';
 import { ButtonLink } from '@/components/ui/Button';
 
@@ -20,6 +22,15 @@ export default async function ConnexionPage({
   // Seul un chemin interne est retenu : un `//` initial désignerait un autre
   // domaine et transformerait la page en tremplin de redirection.
   const suite = raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : undefined;
+
+  // Redirection protectrice : une personne déjà connectée n'a rien à faire sur
+  // l'écran de connexion. On la renvoie vers sa destination initiale (`suite`,
+  // posée par le middleware) si elle existe, sinon vers son espace — tableau de
+  // bord pour la gérante, compte pour la cliente.
+  const current = await getCurrentUser();
+  if (current) {
+    redirect(suite ?? (current.role === 'ADMIN' ? '/admin' : '/mon-compte'));
+  }
 
   return (
     <AuthLayout

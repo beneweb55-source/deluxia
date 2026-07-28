@@ -270,7 +270,10 @@
       opacity 1s var(--ease-luxe),
       transform 1s var(--ease-luxe);
     transition-delay: var(--reveal-delay, 0ms);
-    will-change: opacity, transform;
+    /* Pas de `will-change` permanent : l'apparition ne joue qu'une fois, mais la
+       règle s'appliquait à 20-40 éléments par page catalogue, laissant autant de
+       couches GPU actives en continu. Le navigateur promeut de lui-même l'élément
+       le temps d'une simple transition opacity/transform. */
   }
   .reveal[data-revealed='true'] {
     opacity: 1;

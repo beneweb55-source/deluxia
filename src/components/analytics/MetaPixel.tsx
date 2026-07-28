@@ -39,6 +39,14 @@ export function MetaPixel() {
 
   return (
     <>
+      {/* `afterInteractive` et non `lazyOnload` : ce dernier s'accroche à
+          l'événement `load` de la page. Or celui-ci est souvent déjà passé au
+          moment où le composant s'enregistre (navigation côté client, hydratation
+          tardive) — le script n'était alors jamais injecté et AUCUN événement ne
+          partait. Pour un pixel publicitaire, un événement manqué fausse
+          l'attribution et gâche du budget : la fiabilité prime sur les quelques
+          millisecondes gagnées. C'est aussi la stratégie recommandée par Next.js
+          pour les scripts de mesure. */}
       <Script id="meta-pixel-base" strategy="afterInteractive">
         {`!function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?

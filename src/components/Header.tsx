@@ -11,7 +11,7 @@ import { useFavorites } from '@/components/providers/FavoritesProvider';
 import { useSession } from '@/components/providers/SessionProvider';
 import { MobileMenu } from '@/components/MobileMenu';
 import { SearchOverlay } from '@/components/SearchOverlay';
-import { logoutUnified } from '@/app/(boutique)/_actions/auth';
+import { logoutUnified, switchAccount } from '@/app/(boutique)/_actions/auth';
 import { cn } from '@/lib/utils';
 
 export interface NavLink {
@@ -243,29 +243,37 @@ function AccountMenu({
       className="absolute right-0 mt-4 w-72 border border-line bg-paper p-7 shadow-[0_20px_60px_rgba(0,0,0,0.14)]"
     >
       {user ? (
-        <div className="flex flex-col gap-4">
-          <p className="eyebrow text-ink">Bonjour, {user.name}</p>
-          <span className="rule" />
-
+        <div className="flex flex-col gap-5">
+          {/* Le profil lui-même est la porte vers l'espace : cliquer le nom ouvre
+              le tableau de bord (gérante) ou l'espace client. */}
           <Link
             href={user.role === 'ADMIN' ? '/admin' : '/mon-compte'}
-            className={linkClass}
             onClick={onNavigate}
+            className="group block"
           >
-            {user.role === 'ADMIN' ? 'Administration' : 'Mon compte'}
+            <p className="eyebrow text-ink">{user.name}</p>
+            <p className="mt-1.5 text-[0.75rem] text-graphite">
+              {user.role === 'ADMIN' ? 'Administration' : 'Espace client'}
+              <span className="link-underline ml-2 text-ink">Ouvrir</span>
+            </p>
           </Link>
 
-          <Link href="/favoris" className={linkClass} onClick={onNavigate}>
-            Mes favoris
-          </Link>
+          <span className="rule" />
 
-          {/* Formulaire plutôt qu'un onClick : la déconnexion modifie l'état du
-              serveur, elle doit donc passer par une requête, pas par un lien. */}
-          <form action={logoutUnified}>
-            <button type="submit" className={linkClass}>
-              Se déconnecter
-            </button>
-          </form>
+          {/* Deux actions, et deux seulement. Formulaires plutôt qu'onClick : elles
+              modifient l'état du serveur, elles passent donc par une requête. */}
+          <div className="flex flex-col gap-4">
+            <form action={logoutUnified}>
+              <button type="submit" className={linkClass}>
+                Se déconnecter
+              </button>
+            </form>
+            <form action={switchAccount}>
+              <button type="submit" className={linkClass}>
+                Changer de compte
+              </button>
+            </form>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col text-center">

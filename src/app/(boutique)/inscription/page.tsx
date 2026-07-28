@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { RegisterForm } from '@/app/(boutique)/inscription/RegisterForm';
+import { getCurrentUser } from '@/app/(boutique)/_actions/auth';
 import { AuthLayout } from '@/components/account/AuthLayout';
 import { ButtonLink } from '@/components/ui/Button';
 
@@ -9,7 +11,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-export default function InscriptionPage() {
+export default async function InscriptionPage() {
+  // Déjà connectée ? L'inscription n'a pas de sens : on renvoie vers l'espace.
+  const current = await getCurrentUser();
+  if (current) {
+    redirect(current.role === 'ADMIN' ? '/admin' : '/mon-compte');
+  }
+
   return (
     <AuthLayout
       title="Créer un compte"

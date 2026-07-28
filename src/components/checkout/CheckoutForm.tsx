@@ -485,7 +485,12 @@ export function CheckoutForm({ options }: { options: DeliveryOption[] }) {
 
           <div className="flex items-baseline justify-between border-t border-line px-6 py-5">
             <span className="eyebrow text-ink">Total à payer</span>
-            <span className="text-[1.375rem] font-light text-ink">{formatPrice(total)}</span>
+            {/* Tant qu'aucune wilaya desservie n'est choisie, les frais sont
+                inconnus : on n'annonce donc pas un total qui augmentera ensuite.
+                Le tiret reste aligné sur la ligne « Livraison » juste au-dessus. */}
+            <span className="text-[1.375rem] font-light text-ink">
+              {wilaya?.isServed ? formatPrice(total) : '—'}
+            </span>
           </div>
 
           <div className="border-t border-line px-6 py-5">

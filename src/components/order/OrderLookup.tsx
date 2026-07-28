@@ -96,7 +96,13 @@ export function OrderLookup({
     }
 
     trackPixel('Purchase', {
-      value: order.total,
+      // `value` = produits seuls (sous-total), pas le total livraison comprise :
+      // il doit égaler la somme des `contents` pour que le Gestionnaire
+      // d'événements Meta ne signale pas d'incohérence, et rester sur la même
+      // base que AddToCart et InitiateCheckout (sinon les frais de port gonflent
+      // artificiellement le ROAS remonté à Meta). Les frais restent visibles
+      // ailleurs dans la commande.
+      value: order.subtotal,
       currency: PIXEL_CURRENCY,
       content_type: 'product',
       contents: order.items.map((item) => ({

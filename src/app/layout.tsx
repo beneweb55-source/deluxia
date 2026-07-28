@@ -7,10 +7,14 @@ import { siteUrl } from '@/lib/seo';
 import './globals.css';
 
 const inter = Inter({
-  subsets: ['latin', 'latin-ext'],
+  // Sans clé `weight`, next/font charge la police **variable** d'Inter : un seul
+  // fichier woff2 qui contient toutes les graisses (200 à 700 utilisées ici, le
+  // gras du logo et des titres compris), au lieu de six fichiers statiques. Moins
+  // d'octets et moins de requêtes — sensible sur mobile. `latin` seul suffit au
+  // français (é, è, ç, œ, Ÿ compris) ; `latin-ext` était du poids inutile.
+  subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
-  weight: ['200', '300', '400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {

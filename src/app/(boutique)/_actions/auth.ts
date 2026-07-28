@@ -265,3 +265,19 @@ export async function logoutUnified(): Promise<void> {
   await clearProfileHint();
   redirect('/');
 }
+
+/**
+ * Changer de compte.
+ *
+ * Techniquement, c'est une déconnexion — on efface les deux sessions et l'indice
+ * — mais l'intention diffère de « Se déconnecter » : au lieu de ramener à
+ * l'accueil, on dépose la personne sur l'écran de connexion, prêt à recevoir
+ * d'autres identifiants. Utile quand la gérante veut passer de son compte
+ * d'administration à un compte cliente, ou l'inverse, sur le même appareil.
+ */
+export async function switchAccount(): Promise<void> {
+  await destroySession();
+  await destroyCustomerSession();
+  await clearProfileHint();
+  redirect('/connexion');
+}

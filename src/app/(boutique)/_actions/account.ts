@@ -4,7 +4,11 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, verifyPassword } from '@/lib/auth';
-import { destroyOtherCustomerSessions, getSessionCustomer } from '@/lib/customerAuth';
+import {
+  destroyOtherCustomerSessions,
+  getCustomerSessionExpiry,
+  getSessionCustomer,
+} from '@/lib/customerAuth';
 import { setProfileHint } from '@/lib/session-hint';
 import { normalizePhone } from '@/lib/order-schema';
 
@@ -81,11 +85,14 @@ export async function updateCustomerProfile(
     return { error: 'Ce numéro ou cette adresse e-mail est déjà utilisé par un autre compte.' };
   }
 
-  // Le prénom s'affiche dans l'en-tête : l'indice de session doit suivre.
-  await setProfileHint(
-    { role: 'CUSTOMER', name: data.firstName },
-    new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
-  );
+  // Le prénom s'affiche dans l'en-tête : l'indice de session doit suivre le
+  // nouveau prénom — mais sans jamais vivre plus longtemps que la session réelle.
+  // On le cale donc sur l'expiration effective de la session en cours, et non sur
+  // une date figée « maintenant + 30 j » qui la dépasserait.
+  const expiry = await getCustomerSessionExpiry();
+  if (expiry) {
+    await setProfileHint({ role: 'CUSTOMER', name: data.firstName }, expiry);
+  }
 
   revalidatePath('/mon-compte');
   return { success: 'Vos informations sont enregistrées.' };

@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -99,6 +100,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+  // Miroir synchrone du panier : permet à `add` de connaître la quantité déjà
+  // présente sur une ligne pour calculer l'ajout réel (après plafonnement stock)
+  // sans dépendre du timing d'un setState.
+  const linesRef = useRef<CartLine[]>([]);
+
   // Hydratation depuis le stockage local, après le premier rendu.
   useEffect(() => {
     setLines(readStored());
@@ -108,6 +114,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Persistance — seulement après hydratation, pour ne pas écraser
   // le panier existant avec le tableau vide du premier rendu.
   useEffect(() => {
+    linesRef.current = lines;
     if (!ready) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
@@ -128,6 +135,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const add = useCallback((item: CartAddition) => {
     const key = lineKey(item.productId, item.size, item.color);
     const wanted = Math.max(1, item.quantity ?? 1);
+
+    // Quantité RÉELLEMENT ajoutée, une fois le plafond de stock appliqué. Calculée
+    // à partir du panier courant (linesRef) en reproduisant exactement la logique
+    // de plafonnement ci-dessous : une ligne déjà au maximum ajoute 0.
+    const existingNow = linesRef.current.find((line) => line.key === key);
+    const cap = Math.min(
+      item.stock || existingNow?.stock || MAX_QUANTITY_PER_LINE,
+      MAX_QUANTITY_PER_LINE,
+    );
+    const before = existingNow?.quantity ?? 0;
+    const added = Math.min(before + wanted, cap) - before;
 
     setLines((current) => {
       const existing = current.find((line) => line.key === key);
@@ -155,13 +173,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // Point de passage unique de tous les ajouts au panier (carte produit,
     // fiche détaillée, ajout rapide) : l'événement Meta Pixel est donc émis ici
-    // une seule fois pour toute l'application. No-op si le tracking est inactif.
-    trackPixel('AddToCart', {
-      value: item.unitPrice * wanted,
-      currency: PIXEL_CURRENCY,
-      content_type: 'product',
-      contents: [{ id: item.slug, quantity: wanted, item_price: item.unitPrice }],
-    });
+    // une seule fois pour toute l'application, avec la quantité réellement
+    // ajoutée. No-op si le tracking est inactif ou si rien n'a pu être ajouté.
+    if (added > 0) {
+      trackPixel('AddToCart', {
+        value: item.unitPrice * added,
+        currency: PIXEL_CURRENCY,
+        content_type: 'product',
+        contents: [{ id: item.slug, quantity: added, item_price: item.unitPrice }],
+      });
+    }
   }, []);
 
   const setQuantity = useCallback((key: string, quantity: number) => {

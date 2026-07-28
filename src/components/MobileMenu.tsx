@@ -5,7 +5,7 @@ import { Drawer } from '@/components/ui/Drawer';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ArrowRightIcon, PhoneIcon } from '@/components/icons';
 import { useSession } from '@/components/providers/SessionProvider';
-import { logoutUnified } from '@/app/(boutique)/_actions/auth';
+import { logoutUnified, switchAccount } from '@/app/(boutique)/_actions/auth';
 import { BRAND, SOCIALS } from '@/lib/brand';
 import { type NavLink } from '@/components/Header';
 
@@ -62,23 +62,29 @@ export function MobileMenu({ open, onClose, navLinks }: { open: boolean; onClose
         <div className="mt-10 border-t border-line pt-7">
           {user ? (
             <>
-              <p className="eyebrow text-ink">Bonjour, {user.name}</p>
-              <div className="mt-3 divide-y divide-line/60">
-                <Link
-                  href={user.role === 'ADMIN' ? '/admin' : '/mon-compte'}
-                  onClick={onClose}
-                  className={utilityClass}
-                >
-                  {user.role === 'ADMIN' ? 'Administration' : 'Mon compte'}
-                </Link>
-                {UTILITY_LINKS.map((link) => (
-                  <Link key={link.href} href={link.href} onClick={onClose} className={utilityClass}>
-                    {link.label}
-                  </Link>
-                ))}
+              {/* Le profil est cliquable vers l'espace ; en dessous, deux actions
+                  et deux seulement : se déconnecter ou changer de compte. */}
+              <Link
+                href={user.role === 'ADMIN' ? '/admin' : '/mon-compte'}
+                onClick={onClose}
+                className="block"
+              >
+                <p className="eyebrow text-ink">{user.name}</p>
+                <p className="mt-1.5 text-[0.75rem] text-graphite">
+                  {user.role === 'ADMIN' ? 'Administration' : 'Espace client'}
+                  <span className="link-underline ml-2 text-ink">Ouvrir</span>
+                </p>
+              </Link>
+
+              <div className="mt-5 divide-y divide-line/60">
                 <form action={logoutUnified}>
                   <button type="submit" className={utilityClass}>
                     Se déconnecter
+                  </button>
+                </form>
+                <form action={switchAccount}>
+                  <button type="submit" className={utilityClass}>
+                    Changer de compte
                   </button>
                 </form>
               </div>
@@ -99,16 +105,19 @@ export function MobileMenu({ open, onClose, navLinks }: { open: boolean; onClose
               >
                 Pas encore de compte ? <span className="link-underline text-ink">Créer un compte</span>
               </Link>
-
-              <div className="mt-5 divide-y divide-line/60">
-                {UTILITY_LINKS.map((link) => (
-                  <Link key={link.href} href={link.href} onClick={onClose} className={utilityClass}>
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
             </>
           )}
+        </div>
+
+        {/* ── Liens utilitaires — communs, connectée ou non ────────────────── */}
+        <div className="mt-8 border-t border-line pt-6">
+          <div className="divide-y divide-line/60">
+            {UTILITY_LINKS.map((link) => (
+              <Link key={link.href} href={link.href} onClick={onClose} className={utilityClass}>
+                {link.label}
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* ── Contact ──────────────────────────────────────────────────────── */}

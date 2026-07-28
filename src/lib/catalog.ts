@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { cache } from 'react';
 import { Prisma } from '@prisma/client';
 import { prisma, withRetry } from '@/lib/prisma';
 
@@ -284,21 +285,27 @@ export async function searchProducts(term: string, limit = 10): Promise<ProductC
  * peut tomber pour une base momentanément endormie. Elle est donc la lecture la
  * plus critique de l'application, et la première à devoir tolérer une reprise.
  */
-export async function getNavCollections(): Promise<Array<{ name: string; slug: string }>> {
-  try {
-    return await withRetry(() =>
-      prisma.collection.findMany({
-        orderBy: { position: 'asc' },
-        select: { name: true, slug: true },
-      }),
-    );
-  } catch (error) {
-    // Dernier filet : mieux vaut une navigation réduite aux rubriques fixes
-    // qu'un site entièrement indisponible.
-    console.error('[navigation] collections illisibles, menu réduit', error);
-    return [];
-  }
-}
+// `cache()` dédoublonne l'appel au sein d'un même rendu : l'en-tête (layout) et
+// la vitrine des univers (CategoryShowcase) l'invoquent tous deux pour l'accueil,
+// et sans cache cela ferait deux requêtes identiques par page — répétées à chaque
+// requête sur les pages dynamiques du même layout (connexion, inscription…).
+export const getNavCollections = cache(
+  async (): Promise<Array<{ name: string; slug: string }>> => {
+    try {
+      return await withRetry(() =>
+        prisma.collection.findMany({
+          orderBy: { position: 'asc' },
+          select: { name: true, slug: true },
+        }),
+      );
+    } catch (error) {
+      // Dernier filet : mieux vaut une navigation réduite aux rubriques fixes
+      // qu'un site entièrement indisponible.
+      console.error('[navigation] collections illisibles, menu réduit', error);
+      return [];
+    }
+  },
+);
 
 /** Collection publique par son slug, ou `null` si elle n'existe pas. */
 export async function getCollectionBySlug(slug: string) {

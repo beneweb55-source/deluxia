@@ -67,9 +67,51 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [ready, setReady] = useState(false);
 
+  // Affichage instantané : l'indice est relu du cookie à chaque navigation,
+  // sans requête réseau. Il évite que le menu clignote au chargement.
   useEffect(() => {
     setUser(readHint());
     setReady(true);
+  }, [pathname]);
+
+  /**
+   * Réconciliation avec la **vraie** session, côté serveur.
+   *
+   * L'indice n'est qu'un affichage : il peut manquer alors que la session est
+   * bien vivante — cas constaté en passant de l'administration à la boutique,
+   * où l'en-tête affichait « Se connecter » pour une gérante pourtant connectée.
+   * On interroge donc `/api/session`, qui fait autorité, et on aligne l'état
+   * dessus. C'est aussi ce qui corrige l'affichage après une déconnexion faite
+   * dans un autre onglet.
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    const reconcile = async () => {
+      try {
+        const response = await fetch('/api/session', { cache: 'no-store' });
+        if (!response.ok || cancelled) return;
+
+        const data = (await response.json()) as { user: SessionUser | null };
+        if (cancelled) return;
+
+        setUser(data.user);
+        setReady(true);
+      } catch {
+        // Hors ligne ou requête interrompue : on garde l'état issu de l'indice.
+      }
+    };
+
+    void reconcile();
+
+    // Au retour sur l'onglet, la session a pu changer ailleurs : on revérifie.
+    const onFocus = () => void reconcile();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', onFocus);
+    };
   }, [pathname]);
 
   const value = useMemo<SessionValue>(() => ({ user, ready }), [user, ready]);
