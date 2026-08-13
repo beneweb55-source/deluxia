@@ -5,12 +5,9 @@ import { ButtonLink } from '@/components/ui/Button';
 const delay = (ms: number) => ({ '--enter-delay': `${ms}ms` }) as CSSProperties;
 
 /**
- * Hero pleine largeur — l'image couvre tout l'écran (100svh).
- *
- * Sur mobile, le header sticky est transparent (backdrop-blur) et passe
- * au-dessus de cette section. Le slogan et le CTA sont superposés à l'image
- * via un dégradé sombre en bas, garantissant la lisibilité sans masquer l'image.
- * Sur desktop, la mise en page reste en split (image à droite, texte à gauche).
+ * Hero pleine largeur — l'image couvre tout l'écran (100svh) sur desktop et mobile.
+ * Le header sticky transparent passe au-dessus. Le slogan se place dans la zone
+ * claire de l'image (gauche), avec une typographie éditoriale luxe.
  */
 export function Hero() {
   return (
@@ -62,41 +59,95 @@ export function Hero() {
         </div>
       </section>
 
+      {/* ── Version desktop : plein écran éditorial luxe ── */}
+      {/*
+       * Même principe que mobile : -mt-24 (hauteur desktop du header) pour remonter
+       * sous le header transparent. Image ancrée à droite pour libérer la zone
+       * claire gauche où se pose le texte.
+       */}
+      <section
+        className="relative -mt-24 hidden h-svh w-screen overflow-hidden lg:block"
+        style={{ marginLeft: 'calc(-50vw + 50%)' }}
+      >
+        {/* Image plein écran, sujet ancré à droite */}
+        <Image
+          src="/images/deluxia_banner.jpeg"
+          alt="DELUXIA Collection — Nouvelle collection"
+          fill
+          priority
+          className="object-cover object-right"
+          sizes="100vw"
+        />
 
-      {/* ── Version desktop : split layout (inchangé) ── */}
-      <section className="relative overflow-hidden bg-white dark:bg-black hidden lg:block">
-        <div className="shell flex min-h-[calc(100svh-9rem)] flex-row items-center py-24 gap-8">
+        {/* Voile gauche : gradient blanc → transparent pour renforcer la lisibilité du texte */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'linear-gradient(to right, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.20) 38%, rgba(255,255,255,0.0) 60%)',
+          }}
+        />
 
-          {/* Colonne Texte */}
-          <div className="flex-1 z-10 flex flex-col justify-center">
-            <h1 className="text-hero font-extralight text-ink">
-              <span className="enter block" style={delay(180)}>
-                Where luxury
-              </span>
-              <span className="enter block pl-[0.08em] sm:pl-[2vw]" style={delay(300)}>
-                meets you
-              </span>
-            </h1>
-            <div className="enter mt-10 sm:mt-12" style={delay(460)}>
-              <ButtonLink href="/collections" size="lg">
-                Découvrir la collection
-              </ButtonLink>
-            </div>
+        {/* Bloc éditorial — aligné verticalement au centre, dans la zone claire */}
+        <div className="absolute inset-y-0 left-0 z-10 flex w-[52%] xl:w-[46%] flex-col justify-center pl-[6vw] xl:pl-[8vw]">
+
+          {/* Eyebrow — étiquette de collection */}
+          <p
+            className="enter eyebrow text-graphite tracking-[0.22em] mb-6"
+            style={delay(80)}
+          >
+            Nouvelle Collection
+          </p>
+
+          {/* Slogan principal */}
+          <h1 className="text-hero font-extralight text-ink leading-[1.05]">
+            <span className="enter block" style={delay(200)}>
+              Where luxury
+            </span>
+            <span className="enter block pl-[0.06em]" style={delay(340)}>
+              meets you
+            </span>
+          </h1>
+
+          {/* Tagline */}
+          <p
+            className="enter mt-6 max-w-xs text-[0.9rem] font-light leading-relaxed text-graphite"
+            style={delay(440)}
+          >
+            Des pièces rares, pensées pour celles qui savent ce qu&apos;elles veulent.
+          </p>
+
+          {/* CTA */}
+          <div className="enter mt-10" style={delay(560)}>
+            <ButtonLink href="/collections" size="lg">
+              Découvrir la collection
+            </ButtonLink>
           </div>
+        </div>
 
-          {/* Colonne Image */}
-          <div className="w-[45%] max-w-xl xl:max-w-2xl enter" style={delay(100)}>
-            <div className="relative aspect-[3/4] sm:aspect-[4/5] w-full overflow-hidden bg-stone-50 shadow-2xl rounded-lg">
-              <Image
-                src="/images/deluxia_banner.jpeg"
-                alt="DELUXIA Collection"
-                fill
-                priority
-                className="object-cover object-center"
-              />
-            </div>
-          </div>
-
+        {/* Indicateur de scroll — centré en bas */}
+        <div
+          className="enter absolute bottom-10 left-1/2 z-10 -translate-x-1/2 flex flex-col items-center gap-2"
+          style={delay(700)}
+          aria-hidden="true"
+        >
+          <span className="eyebrow text-[0.55rem] tracking-[0.22em] text-graphite/70">
+            Défiler
+          </span>
+          <span
+            className="block h-10 w-px origin-top"
+            style={{
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0))',
+              animation: 'scrollLine 1.8s ease-in-out infinite',
+            }}
+          />
+          <style>{`
+            @keyframes scrollLine {
+              0%   { transform: scaleY(0); opacity: 0; }
+              30%  { opacity: 1; }
+              100% { transform: scaleY(1); opacity: 0; }
+            }
+          `}</style>
         </div>
       </section>
     </>
