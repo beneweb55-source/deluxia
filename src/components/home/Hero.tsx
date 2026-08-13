@@ -35,32 +35,33 @@ export function Hero() {
           sizes="100vw"
         />
 
-        {/* Gradient haut → transparence pour le header */}
+        {/* Léger voile en haut pour que le header reste lisible */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              'linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.0) 30%, rgba(0,0,0,0.0) 55%, rgba(0,0,0,0.78) 100%)',
+              'linear-gradient(to bottom, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.0) 20%)',
           }}
         />
 
-        {/* Texte et CTA ancrés en bas de l'image */}
-        <div className="absolute inset-x-0 bottom-0 z-10 px-5 pb-12 sm:px-8 sm:pb-16">
-          <h1 className="text-hero font-extralight text-white">
+        {/* Slogan + CTA — zone haute gauche, fond clair de l'image */}
+        <div className="absolute inset-x-0 top-0 z-10 px-5 pt-[6.5rem] sm:px-8 sm:pt-32">
+          <h1 className="text-hero font-extralight text-ink drop-shadow-sm">
             <span className="enter block" style={delay(180)}>
               Where luxury
             </span>
-            <span className="enter block pl-[0.08em] sm:pl-[2vw]" style={delay(300)}>
+            <span className="enter block pl-[0.08em]" style={delay(300)}>
               meets you
             </span>
           </h1>
-          <div className="enter mt-8 sm:mt-10" style={delay(460)}>
+          <div className="enter mt-7 sm:mt-9" style={delay(460)}>
             <ButtonLink href="/collections" size="lg">
               Découvrir la collection
             </ButtonLink>
           </div>
         </div>
       </section>
+
 
       {/* ── Version desktop : split layout (inchangé) ── */}
       <section className="relative overflow-hidden bg-white dark:bg-black hidden lg:block">
