@@ -22,6 +22,7 @@ export default async function CollectionsPage({
       id: true,
       slug: true,
       name: true,
+      imageUrl: true,
       position: true,
       _count: { select: { categories: true } },
       // Nombre de produits de la collection : affiché dans le dialogue de
@@ -39,7 +40,7 @@ export default async function CollectionsPage({
 
       {params.erreur === 'non-vide' && (
         <p role="alert" className="mb-8 border-l-2 border-ink pl-4 text-[0.875rem] leading-relaxed text-ink">
-          Cette collection contient encore des catégories : elle n’a pas été supprimée. Déplacez
+          Cette collection contient encore des catégories : elle n'a pas été supprimée. Déplacez
           ces catégories vers une autre collection, ou supprimez-les, puis recommencez.
         </p>
       )}
@@ -55,6 +56,7 @@ export default async function CollectionsPage({
           id: col.id,
           slug: col.slug,
           name: col.name,
+          imageUrl: col.imageUrl,
           position: col.position,
           categoryCount: col._count.categories,
           productCount: col.categories.reduce((sum, cat) => sum + cat._count.products, 0),

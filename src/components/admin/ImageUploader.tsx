@@ -314,3 +314,189 @@ async function compress(file: File): Promise<File> {
     return file;
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SingleImageUploader — version mono-image pour collections et catégories
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Téléversement d'un visuel unique (collection ou catégorie).
+ *
+ * Même mécanisme que `ImageUploader` : compression WebP côté navigateur puis
+ * envoi vers `/api/admin/media`. La différence est qu'on gère une seule URL
+ * au lieu d'un tableau, sans réordonnement.
+ */
+export function SingleImageUploader({
+  name = 'imageUrl',
+  initial = '',
+  label = 'Photo',
+}: {
+  /** Nom du champ transmis au formulaire. */
+  name?: string;
+  /** URL de l'image existante, ou vide. */
+  initial?: string;
+  /** Libellé affiché au-dessus de la zone. */
+  label?: string;
+}) {
+  const [url, setUrl] = useState<string>(initial);
+  const [upload, setUpload] = useState<UploadState | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
+
+  const handleFiles = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      setError(null);
+
+      const file = Array.from(files).find((f) => f.type.startsWith('image/'));
+      if (!file) {
+        setError('Choisissez un fichier image (JPEG, PNG ou WebP).');
+        return;
+      }
+
+      setUpload({ name: file.name, status: 'compression' });
+
+      try {
+        const compressed = await compress(file);
+
+        setUpload({ name: file.name, status: 'envoi' });
+
+        const body = new FormData();
+        body.append('file', compressed, compressed.name);
+
+        const response = await fetch('/api/admin/media', { method: 'POST', body });
+        const data = (await response.json()) as { url?: string; message?: string };
+
+        if (!response.ok || !data.url) {
+          throw new Error(data.message ?? 'Envoi refusé.');
+        }
+
+        setUrl(data.url);
+        setUpload(null);
+      } catch (cause) {
+        const message = cause instanceof Error ? cause.message : 'Envoi impossible.';
+        setUpload({ name: file.name, status: 'erreur', message });
+      }
+
+      if (inputRef.current) inputRef.current.value = '';
+    },
+    [],
+  );
+
+  const remove = () => setUrl('');
+
+  const onDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragging(false);
+    void handleFiles(event.dataTransfer.files);
+  };
+
+  return (
+    <div>
+      <input type="hidden" name={name} value={url} />
+
+      <p className="mb-2 text-[0.8125rem] font-medium text-ink">{label}</p>
+
+      {/* ── Visuel existant ──────────────────────────────────────────────── */}
+      {url ? (
+        <div className="relative inline-block">
+          <div className="relative aspect-4/5 w-40 overflow-hidden bg-mist sm:w-48">
+            <Image
+              src={url}
+              alt={label}
+              fill
+              sizes="12rem"
+              className="object-cover"
+              unoptimized
+            />
+          </div>
+
+          <div className="mt-2 flex gap-1">
+            <label
+              htmlFor={inputId}
+              className="inline-flex h-8 cursor-pointer items-center gap-1.5 border border-line px-3 text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-graphite transition-colors hover:border-ink hover:text-ink"
+            >
+              Remplacer
+            </label>
+            <button
+              type="button"
+              onClick={remove}
+              aria-label="Retirer la photo"
+              className="inline-flex h-8 w-8 items-center justify-center border border-line text-graphite transition-colors hover:border-ink hover:text-ink"
+            >
+              <TrashIcon className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <input
+            ref={inputRef}
+            id={inputId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+            onChange={(event) => void handleFiles(event.target.files)}
+            className="sr-only"
+          />
+        </div>
+      ) : (
+        /* ── Zone de dépôt ─────────────────────────────────────────────── */
+        <div
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          className={cn(
+            'border border-dashed p-5 text-center transition-colors duration-200',
+            dragging ? 'border-ink bg-mist' : 'border-line',
+          )}
+        >
+          <input
+            ref={inputRef}
+            id={inputId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+            onChange={(event) => void handleFiles(event.target.files)}
+            className="sr-only"
+          />
+
+          <label
+            htmlFor={inputId}
+            className="inline-flex h-10 cursor-pointer items-center gap-2 border border-ink bg-ink px-5 text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-paper transition-opacity hover:opacity-80"
+          >
+            <PlusIcon className="h-3.5 w-3.5" />
+            Ajouter une photo
+          </label>
+
+          <p className="mt-3 text-[0.75rem] text-ash">
+            JPEG, PNG ou WebP · compression automatique
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <p role="alert" className="mt-3 border-l-2 border-ink pl-4 text-[0.8125rem] text-ink">
+          {error}
+        </p>
+      )}
+
+      {upload && (
+        <p className="mt-3 text-[0.8125rem] text-ash">
+          {upload.status === 'compression' && 'Compression…'}
+          {upload.status === 'envoi' && 'Envoi…'}
+          {upload.status === 'erreur' && (upload.message ?? 'Échec')}
+        </p>
+      )}
+
+      {!url && !upload && (
+        <p className="mt-3 text-[0.75rem] text-graphite">
+          Sans photo, la boutique affiche un visuel généré automatiquement.
+        </p>
+      )}
+    </div>
+  );
+}
+

@@ -11,11 +11,13 @@ import { BulkBar, BulkButton, SelectBox, useBulkSelection } from '@/components/a
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
+import { SingleImageUploader } from '@/components/admin/ImageUploader';
 
 export interface CollectionRow {
   id: string;
   slug: string;
   name: string;
+  imageUrl: string | null;
   position: number;
   categoryCount: number;
   productCount: number;
@@ -221,6 +223,11 @@ function CollectionForm({
           hint="Laissez vide pour la déduire du nom."
         />
       </div>
+
+      <SingleImageUploader
+        initial={collection?.imageUrl ?? ''}
+        label="Photo de la collection"
+      />
 
       <Input
         label="Position"

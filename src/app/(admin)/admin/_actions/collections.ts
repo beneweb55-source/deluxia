@@ -17,6 +17,7 @@ function revalidateCollections() {
 const collectionSchema = z.object({
   name: z.string().trim().min(2, 'Le nom est requis.').max(60),
   slug: z.string().trim().max(60).optional(),
+  imageUrl: z.string().trim().max(500).optional(),
   position: z.coerce.number().int().min(0).max(999).default(0),
 });
 
@@ -30,6 +31,7 @@ export async function saveCollection(
   const parsed = collectionSchema.safeParse({
     name: formData.get('name'),
     slug: formData.get('slug') || undefined,
+    imageUrl: formData.get('imageUrl') || undefined,
     position: formData.get('position') || 0,
   });
 
@@ -39,6 +41,7 @@ export async function saveCollection(
   const payload = {
     name: data.name,
     slug: slugify(data.slug || data.name),
+    imageUrl: data.imageUrl || null,
     position: data.position,
   };
 

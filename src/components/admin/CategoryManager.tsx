@@ -13,6 +13,7 @@ import { bulkDeleteCategories } from '@/app/(admin)/admin/_actions/suppression';
 import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Field';
 import { cn } from '@/lib/utils';
+import { SingleImageUploader } from '@/components/admin/ImageUploader';
 
 export interface CategoryRow {
   id: string;
@@ -20,6 +21,7 @@ export interface CategoryRow {
   name: string;
   tagline: string | null;
   description: string | null;
+  imageUrl: string | null;
   collectionId: string | null;
   position: number;
   isActive: boolean;
@@ -263,6 +265,11 @@ function CategoryForm({
         maxLength={1000}
         rows={3}
         defaultValue={category?.description ?? ''}
+      />
+
+      <SingleImageUploader
+        initial={category?.imageUrl ?? ''}
+        label="Photo de la catégorie"
       />
 
       <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2">

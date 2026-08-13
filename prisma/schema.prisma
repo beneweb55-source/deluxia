@@ -89,6 +89,7 @@ model Collection {
   name        String
   tagline     String?
   description String?  @db.Text
+  imageUrl    String? // vide -> placeholder premium généré
   position    Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
