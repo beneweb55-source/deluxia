@@ -128,7 +128,9 @@ export function Drawer({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          'absolute inset-y-0 flex w-full max-w-[27rem] flex-col bg-paper shadow-[0_0_60px_rgba(0,0,0,0.12)]',
+          'absolute inset-y-0 flex w-full max-w-[27rem] flex-col',
+          'bg-paper/80 backdrop-blur-2xl',
+          'shadow-[0_0_80px_rgba(0,0,0,0.18)] ring-1 ring-white/10',
           'transition-transform duration-700 [transition-timing-function:var(--ease-luxe)]',
           side === 'right' ? 'right-0' : 'left-0',
           open ? 'translate-x-0' : side === 'right' ? 'translate-x-full' : '-translate-x-full',
