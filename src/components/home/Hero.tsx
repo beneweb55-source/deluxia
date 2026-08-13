@@ -37,7 +37,7 @@ export function Hero() {
           fill
           priority
           className="object-cover"
-          style={{ objectPosition: '55% 30%' }}
+          style={{ objectPosition: '55% 62%' }}
           sizes="100vw"
         />
 
@@ -61,20 +61,6 @@ export function Hero() {
 
         {/* Zone texte — ancrée en bas, marges de sécurité pour les pouces */}
         <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-10 sm:px-10 sm:pb-14">
-
-          {/* Eyebrow */}
-          <div className="enter flex items-center gap-3 mb-5" style={delay(100)}>
-            <span
-              className="block h-px w-6"
-              style={{ background: 'rgba(255,255,255,0.45)' }}
-            />
-            <p
-              className="eyebrow"
-              style={{ color: 'rgba(255,255,255,0.65)', letterSpacing: '0.22em' }}
-            >
-              Nouvelle Collection
-            </p>
-          </div>
 
           {/* Slogan */}
           <h1
@@ -135,11 +121,7 @@ export function Hero() {
         {/* ── Colonne gauche : zone éditoriale ── */}
         <div className="flex flex-col justify-center bg-paper px-16 py-20 xl:px-24 2xl:px-32">
 
-          {/* Filet décoratif + eyebrow */}
-          <div className="enter flex items-center gap-4 mb-8" style={delay(60)}>
-            <span className="block h-px w-8 bg-ash/40" />
-            <p className="eyebrow text-ash">Nouvelle Collection</p>
-          </div>
+
 
           {/* Slogan principal */}
           <h1 className="text-hero font-extralight text-ink leading-[0.95] tracking-[-0.045em]">
@@ -204,7 +186,7 @@ export function Hero() {
             alt="Sac et escarpins brodés DELUXIA — Collection luxe"
             fill
             priority
-            className="object-cover object-[42%_8%]"
+            className="object-cover object-[42%_58%]"
             sizes="(min-width: 1280px) 56vw, 52vw"
           />
 
