@@ -37,7 +37,7 @@ export function Hero() {
           fill
           priority
           className="object-cover"
-          style={{ objectPosition: '55% 62%' }}
+          style={{ objectPosition: '55% 82%' }}
           sizes="100vw"
         />
 
@@ -186,7 +186,7 @@ export function Hero() {
             alt="Sac et escarpins brodés DELUXIA — Collection luxe"
             fill
             priority
-            className="object-cover object-[42%_58%]"
+            className="object-cover object-[42%_78%]"
             sizes="(min-width: 1280px) 56vw, 52vw"
           />
 
