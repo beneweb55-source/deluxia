@@ -12,7 +12,7 @@ const delay = (ms: number) => ({ '--enter-delay': `${ms}ms` }) as CSSProperties;
  */
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-white">
+    <section className="relative overflow-hidden bg-white dark:bg-black">
       <div className="shell flex min-h-[calc(100svh-9rem)] flex-col lg:flex-row lg:items-center py-12 sm:min-h-[calc(100svh-10rem)] sm:py-24 gap-12 lg:gap-8">
         
         {/* Colonne Texte */}
