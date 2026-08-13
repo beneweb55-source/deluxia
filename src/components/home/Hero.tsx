@@ -19,40 +19,103 @@ export function Hero() {
   return (
     <>
       {/* ════════════════════════════════════════════════════════════════════
-          MOBILE (< lg) — plein écran avec image de fond
+          MOBILE (< lg) — plein écran luxe, texte ancré en bas
+
+          Image centrée sur le sac (sujet principal).
+          Texte blanc sur gradient sombre en bas : lisibilité parfaite,
+          approche standard des grandes maisons de mode sur mobile.
+          Le haut reste clair pour que le header transparent soit lisible.
       ════════════════════════════════════════════════════════════════════ */}
       <section
         className="relative -mt-20 h-svh overflow-hidden lg:hidden"
         style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}
       >
+        {/* Image : centrée sur le sac brodé (55% horizontal, 30% vertical) */}
         <Image
           src="/images/deluxia_banner.jpeg"
-          alt="DELUXIA Collection"
+          alt="DELUXIA Collection — Sac et escarpins brodés"
           fill
           priority
-          className="object-cover object-[60%_top]"
+          className="object-cover"
+          style={{ objectPosition: '55% 30%' }}
           sizes="100vw"
         />
 
-        {/* Voile haut — lisibilité du header transparent */}
+        {/* Calque 1 — voile clair en haut pour le header transparent */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              'linear-gradient(to bottom, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 25%)',
+              'linear-gradient(to bottom, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 18%)',
           }}
         />
 
-        {/* Texte positionné dans la zone claire haute-gauche */}
-        <div className="absolute inset-x-0 top-0 z-10 px-5 pt-24 sm:px-8 sm:pt-28">
-          <h1 className="text-hero font-extralight text-ink">
-            <span className="enter block" style={delay(180)}>Where luxury</span>
-            <span className="enter block pl-[0.08em]" style={delay(300)}>meets you</span>
+        {/* Calque 2 — gradient sombre en bas pour la zone texte */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'linear-gradient(to top, rgba(5,5,5,0.88) 0%, rgba(5,5,5,0.55) 28%, rgba(5,5,5,0) 56%)',
+          }}
+        />
+
+        {/* Zone texte — ancrée en bas, marges de sécurité pour les pouces */}
+        <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-10 sm:px-10 sm:pb-14">
+
+          {/* Eyebrow */}
+          <div className="enter flex items-center gap-3 mb-5" style={delay(100)}>
+            <span
+              className="block h-px w-6"
+              style={{ background: 'rgba(255,255,255,0.45)' }}
+            />
+            <p
+              className="eyebrow"
+              style={{ color: 'rgba(255,255,255,0.65)', letterSpacing: '0.22em' }}
+            >
+              Nouvelle Collection
+            </p>
+          </div>
+
+          {/* Slogan */}
+          <h1
+            className="font-extralight text-white leading-[0.95]"
+            style={{ fontSize: 'clamp(2.6rem, 13vw, 4.5rem)', letterSpacing: '-0.04em' }}
+          >
+            <span className="enter block" style={delay(200)}>Where luxury</span>
+            <span
+              className="enter block"
+              style={{ ...delay(330), paddingLeft: '0.06em' }}
+            >
+              meets you
+            </span>
           </h1>
-          <div className="enter mt-7" style={delay(460)}>
+
+          {/* Tagline */}
+          <p
+            className="enter mt-4 text-[0.85rem] font-light leading-relaxed"
+            style={{ ...delay(430), color: 'rgba(255,255,255,0.62)' }}
+          >
+            Des pièces rares, pensées pour celles qui savent ce qu&apos;elles veulent.
+          </p>
+
+          {/* CTA + indicateur de scroll */}
+          <div className="enter mt-7 flex items-center gap-6" style={delay(540)}>
             <ButtonLink href="/collections" size="lg">
-              Découvrir la collection
+              Découvrir
             </ButtonLink>
+
+            {/* Trait vertical animé */}
+            <div className="flex flex-col items-center gap-1.5" aria-hidden="true">
+              <span
+                className="block w-px origin-top"
+                style={{
+                  height: '2.5rem',
+                  background:
+                    'linear-gradient(to bottom, rgba(255,255,255,0.65), rgba(255,255,255,0))',
+                  animation: 'mobileScrollLine 2s var(--ease-luxe) infinite',
+                }}
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -156,13 +219,18 @@ export function Hero() {
         </div>
       </section>
 
-      {/* Animation du trait de scroll */}
+      {/* Animations keyframes */}
       <style>{`
         @keyframes scrollBar {
           0%   { transform: scaleX(0); transform-origin: left; opacity: 0; }
           40%  { opacity: 1; }
           80%  { transform: scaleX(1); transform-origin: left; opacity: 0.6; }
           100% { transform: scaleX(1); opacity: 0; }
+        }
+        @keyframes mobileScrollLine {
+          0%   { transform: scaleY(0); opacity: 0; }
+          25%  { opacity: 1; }
+          100% { transform: scaleY(1); opacity: 0; }
         }
       `}</style>
     </>
