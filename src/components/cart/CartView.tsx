@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import Link from 'next/link';
 import { ProductVisual } from '@/components/ProductVisual';
 import { ButtonLink } from '@/components/ui/Button';
@@ -17,6 +19,7 @@ import { MIN_HOME_FEE, SERVED_COUNT } from '@/data/wilayas';
  */
 export function CartView() {
   const cart = useCart();
+  const [confirmClear, setConfirmClear] = useState(false);
 
   // Pendant la relecture du stockage local, on réserve la hauteur plutôt que
   // d'afficher brièvement « panier vide » à un visiteur qui a des articles.
@@ -134,13 +137,36 @@ export function CartView() {
           <ButtonLink href="/boutique" variant="quiet" size="sm" className="-ml-1">
             ← Continuer mes achats
           </ButtonLink>
-          <button
-            type="button"
-            onClick={cart.clear}
-            className="link-underline text-[0.6875rem] uppercase tracking-[0.14em] text-ash hover:text-ink"
-          >
-            Vider le panier
-          </button>
+          {confirmClear ? (
+            <span className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  cart.clear();
+                  setConfirmClear(false);
+                }}
+                className="link-underline text-[0.6875rem] uppercase tracking-[0.14em] text-ink"
+              >
+                Confirmer
+              </button>
+              <span className="text-ash">·</span>
+              <button
+                type="button"
+                onClick={() => setConfirmClear(false)}
+                className="link-underline text-[0.6875rem] uppercase tracking-[0.14em] text-ash hover:text-ink"
+              >
+                Annuler
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmClear(true)}
+              className="link-underline text-[0.6875rem] uppercase tracking-[0.14em] text-ash hover:text-ink"
+            >
+              Vider le panier
+            </button>
+          )}
         </div>
       </section>
 

@@ -37,6 +37,7 @@ export async function updateOrderStatus(
   orderId: string,
   status: OrderStatus,
   note?: string,
+  cancelReason?: string,
 ): Promise<void> {
   const admin = await requireAdmin();
 
@@ -64,6 +65,9 @@ export async function updateOrderStatus(
         ...(status === 'CONFIRMEE' ? { confirmedAt: now } : {}),
         ...(status === 'EXPEDIEE' ? { shippedAt: now } : {}),
         ...(status === 'LIVREE' ? { deliveredAt: now } : {}),
+        ...(status === 'ANNULEE' && cancelReason ? { cancelReason: cancelReason.trim().slice(0, 300) } : {}),
+        // Réinitialise le motif si on sort de l'état « annulée ».
+        ...(status !== 'ANNULEE' && order.status === 'ANNULEE' ? { cancelReason: null } : {}),
       },
     });
 
@@ -71,7 +75,7 @@ export async function updateOrderStatus(
       data: { orderId, status, note: note?.slice(0, 300) ?? null, author: admin.name },
     });
 
-    // Réintégration du stock et déduction totalSpent à l'annulation
+    // Réintégration du stock et correction des compteurs client à l'annulation.
     if (status === 'ANNULEE' && order.status !== 'ANNULEE') {
       for (const item of order.items) {
         if (!item.productId) continue;
@@ -81,25 +85,47 @@ export async function updateOrderStatus(
         });
       }
       if (order.customerId) {
+        const customer = await tx.customer.findUnique({
+          where: { id: order.customerId },
+          select: { totalSpent: true, totalOrders: true },
+        });
         await tx.customer.update({
           where: { id: order.customerId },
-          data: { totalSpent: { decrement: order.total } },
+          data: {
+            totalSpent: Math.max(0, (customer?.totalSpent ?? 0) - order.total),
+            totalOrders: Math.max(0, (customer?.totalOrders ?? 0) - 1),
+          },
         });
       }
     }
-    // Re-déduction du stock et ré-incrémentation totalSpent si on annule l'annulation
+    // Re-déduction du stock et ré-incrémentation des compteurs si on annule l'annulation.
+    // Le stock est vérifié avant chaque décrément : si un article a été revendu entre-temps,
+    // la réactivation est refusée plutôt que de laisser le stock passer négatif.
     else if (status !== 'ANNULEE' && order.status === 'ANNULEE') {
       for (const item of order.items) {
         if (!item.productId) continue;
-        await tx.productVariant.updateMany({
-          where: { productId: item.productId, size: item.size, color: item.color },
+        const updated = await tx.productVariant.updateMany({
+          where: {
+            productId: item.productId,
+            size: item.size,
+            color: item.color,
+            stock: { gte: item.quantity },
+          },
           data: { stock: { decrement: item.quantity } },
         });
+        if (updated.count === 0) {
+          throw new Error(
+            `Stock insuffisant pour réactiver la commande : vérifiez l'article « ${item.size} / ${item.color} ».`,
+          );
+        }
       }
       if (order.customerId) {
         await tx.customer.update({
           where: { id: order.customerId },
-          data: { totalSpent: { increment: order.total } },
+          data: {
+            totalSpent: { increment: order.total },
+            totalOrders: { increment: 1 },
+          },
         });
       }
     }
@@ -219,9 +245,7 @@ export async function updateDeliveryRate(_prev: ActionState, formData: FormData)
     },
   });
 
-  revalidatePath('/admin/livraison');
-  revalidatePath('/livraison');
-  revalidatePath('/commande');
+  revalidateDelivery();
   return { success: 'Tarif enregistré.' };
 }
 
