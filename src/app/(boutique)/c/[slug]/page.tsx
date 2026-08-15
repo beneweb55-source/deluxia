@@ -6,7 +6,7 @@ import { CatalogSection } from '@/components/catalog/CatalogSection';
 import { getCollectionBySlug, getFilterFacets, listProducts } from '@/lib/catalog';
 import { parseCatalogParams, type RawSearchParams } from '@/lib/catalog-params';
 import { breadcrumbJsonLd } from '@/lib/seo';
-
+import { SubCategoryGrid } from '@/components/catalog/SubCategoryGrid';
 export const revalidate = 300;
 
 export async function generateMetadata({
@@ -56,6 +56,8 @@ export default async function CollectionPage({
         description={`Découvrez toutes les pièces de la collection ${collection.name}.`}
         crumbs={[{ name: collection.name, href: `/c/${slug}` }]}
       />
+
+      <SubCategoryGrid categories={facets.categories as any} collectionSlug={slug} />
 
       <CatalogSection products={products} facets={facets} />
     </>

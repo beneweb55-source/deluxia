@@ -226,9 +226,8 @@ export async function getFilterFacets(collectionSlug?: string) {
       }),
       prisma.category.findMany({
         where: { isActive: true, ...(collectionSlug ? { collection: { slug: collectionSlug } } : {}) },
-        select: { slug: true, name: true },
-        orderBy: { position: 'asc' },
-      }),
+        select: { slug: true, name: true, imageUrl: true },
+        orderBy: { position: 'asc' },      }),
     ]),
   );
 
