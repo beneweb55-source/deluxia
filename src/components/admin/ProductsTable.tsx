@@ -57,6 +57,8 @@ export interface ProductRow {
 export function ProductsTable({ products, hasFilter }: { products: ProductRow[]; hasFilter: boolean }) {
   const selection = useBulkSelection(products.map((p) => p.id));
   const [asking, setAsking] = useState(false);
+  const [askingPromo, setAskingPromo] = useState(false);
+  const [promoPct, setPromoPct] = useState('');
   const [pending, startTransition] = useTransition();
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -69,6 +71,21 @@ export function ProductsTable({ products, hasFilter }: { products: ProductRow[];
     });
   };
 
+  const runPromo = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const pct = parseInt(promoPct, 10);
+    if (isNaN(pct) || pct < 0 || pct > 99) return;
+    
+    setAskingPromo(false);
+    startTransition(async () => {
+      const { applyBulkPromotion } = await import('@/app/(admin)/admin/_actions/promotions');
+      const result = await applyBulkPromotion({ type: 'products', ids: selection.ids }, pct);
+      if (result.success) setNotice(result.success);
+      if (result.error) setNotice(result.error);
+      selection.clear();
+      setPromoPct('');
+    });
+  };
   return (
     <>
       {notice && (
@@ -127,6 +144,9 @@ export function ProductsTable({ products, hasFilter }: { products: ProductRow[];
         plural="produits"
         onClear={selection.clear}
       >
+        <BulkButton variant="ghost" disabled={pending} onClick={() => setAskingPromo(true)}>
+          {pending ? 'Application…' : 'Promouvoir'}
+        </BulkButton>
         <BulkButton variant="solid" disabled={pending} onClick={() => setAsking(true)}>
           {pending ? 'Suppression…' : 'Supprimer'}
         </BulkButton>
@@ -141,10 +161,52 @@ export function ProductsTable({ products, hasFilter }: { products: ProductRow[];
           onCancel={() => setAsking(false)}
         />
       )}
+
+      {askingPromo && (
+        <div className="fixed inset-0 z-[95] flex items-end justify-center p-4 sm:items-center">
+          <div className="absolute inset-0 bg-ink/30 backdrop-blur-[2px]" onClick={() => setAskingPromo(false)} />
+          <form
+            onSubmit={runPromo}
+            className="relative w-full max-w-md animate-slide-up bg-paper p-7 shadow-[0_20px_70px_rgba(0,0,0,0.2)]"
+          >
+            <h2 className="text-[1.125rem] font-light tracking-[-0.02em] text-ink">
+              Appliquer une remise
+            </h2>
+            <p className="mt-3 mb-4 text-[0.875rem] leading-relaxed text-graphite">
+              Saisissez le pourcentage de réduction à appliquer aux {selection.count} produit{selection.count > 1 ? 's' : ''} sélectionné{selection.count > 1 ? 's' : ''}. Saisissez 0 pour retirer une promotion existante.
+            </p>
+            <input
+              type="number"
+              min="0"
+              max="99"
+              autoFocus
+              required
+              value={promoPct}
+              onChange={(e) => setPromoPct(e.target.value)}
+              placeholder="Ex: 20"
+              className="h-11 w-full border border-line bg-paper px-3 text-[0.875rem] text-ink outline-none focus:border-ink mb-6"
+            />
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setAskingPromo(false)}
+                className="h-11 border border-line px-6 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-ink transition-colors hover:border-ink sm:h-10"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                className="h-11 border border-ink bg-ink px-6 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-paper transition-colors hover:bg-ink-soft sm:h-10"
+              >
+                Appliquer
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </>
   );
 }
-
 function ProductLine({
   product,
   selected,

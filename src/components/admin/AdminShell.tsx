@@ -34,11 +34,11 @@ const NAV: ReadonlyArray<{ title: string; items: readonly NavItem[] }> = [
       { label: 'Produits', href: '/admin/produits' },
       { label: 'Collections', href: '/admin/collections' },
       { label: 'Catégories', href: '/admin/categories' },
+      { label: 'Promotions', href: '/admin/promotions' },
     ],
   },
   {
-    title: 'Boutique',
-    items: [
+    title: 'Boutique',    items: [
       { label: 'Livraison', href: '/admin/livraison' },
       { label: 'Messages', href: '/admin/messages', badge: 'messages' },
       { label: 'Paramètres', href: '/admin/parametres' },
