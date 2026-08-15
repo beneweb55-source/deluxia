@@ -83,18 +83,11 @@ function readStored(): CartLine[] {
       return (
         typeof l.key === 'string' &&
         typeof l.productId === 'string' &&
-        typeof l.variantId === 'string' &&
-        typeof l.slug === 'string' &&
         typeof l.name === 'string' &&
-        typeof l.size === 'string' &&
-        typeof l.color === 'string' &&
         typeof l.unitPrice === 'number' &&
         Number.isFinite(l.unitPrice) &&
-        l.unitPrice > 0 &&
         typeof l.quantity === 'number' &&
-        l.quantity > 0 &&
-        typeof l.stock === 'number' &&
-        l.stock >= 0
+        l.quantity > 0
       );
     });
   } catch {

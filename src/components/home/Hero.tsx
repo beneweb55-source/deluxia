@@ -81,7 +81,7 @@ export function Hero() {
             className="enter mt-4 text-[0.85rem] font-light leading-relaxed"
             style={{ ...delay(430), color: 'rgba(255,255,255,0.62)' }}
           >
-            Des pièces rares, pensées pour celles qui savent ce qu&apos;elles veulent.
+            Des pièces d&apos;exceptions pensées pour vous.
           </p>
 
           {/* CTA + indicateur de scroll */}

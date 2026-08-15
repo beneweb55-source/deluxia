@@ -28,7 +28,6 @@ export function OrderStatusControl({
 }) {
   const [isPending, startTransition] = useTransition();
   const [askCancel, setAskCancel] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
   const [note, setNote] = useState(adminNote ?? '');
   const [saved, setSaved] = useState(false);
 
@@ -42,11 +41,9 @@ export function OrderStatusControl({
   const cancelled = current === 'ANNULEE';
 
   function applyStatus(status: OrderStatus) {
-    const reason = status === 'ANNULEE' && cancelReason.trim() ? cancelReason.trim() : undefined;
     startTransition(async () => {
-      await updateOrderStatus(orderId, status, undefined, reason);
+      await updateOrderStatus(orderId, status);
       setAskCancel(false);
-      setCancelReason('');
     });
   }
 
@@ -102,13 +99,6 @@ export function OrderStatusControl({
               <p role="alert" className="text-[0.875rem] text-ink">
                 Confirmer l&rsquo;annulation ?
               </p>
-              <input
-                type="text"
-                value={cancelReason}
-                onChange={(event) => setCancelReason(event.target.value)}
-                placeholder="Motif (facultatif) : client injoignable, erreur de stock…"
-                className="mt-3 w-full border border-line bg-transparent px-3 py-2 text-[0.8125rem] text-ink placeholder:text-ash focus:border-ink focus:outline-none"
-              />
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -124,10 +114,7 @@ export function OrderStatusControl({
                   size="sm"
                   variant="quiet"
                   disabled={isPending}
-                  onClick={() => {
-                    setAskCancel(false);
-                    setCancelReason('');
-                  }}
+                  onClick={() => setAskCancel(false)}
                 >
                   Retour
                 </Button>

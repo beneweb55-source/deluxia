@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { ProductVisual } from '@/components/ProductVisual';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Field';
-import { CheckIcon, MinusIcon, PlusIcon, ShieldIcon, TruckIcon } from '@/components/icons';
+import { CheckIcon, ShieldIcon, TruckIcon } from '@/components/icons';
 import { useCart } from '@/components/providers/CartProvider';
 import { formatPrice } from '@/lib/format';
 import { formatPhoneInput, orderSchema, type OrderFormFields } from '@/lib/order-schema';
@@ -431,7 +431,6 @@ export function CheckoutForm({ options }: { options: DeliveryOption[] }) {
             className="mt-8"
             value={values.notes ?? ''}
             error={errors.notes}
-            onBlur={() => blur('notes')}
             onChange={(event) => update('notes', event.target.value)}
           />
         </Step>
@@ -447,66 +446,28 @@ export function CheckoutForm({ options }: { options: DeliveryOption[] }) {
           </div>
 
           <ul className="max-h-72 overflow-y-auto px-6">
-            {cart.lines.map((line) => {
-              const atMax = line.quantity >= line.stock;
-
-              return (
-                <li key={line.key} className="flex gap-4 border-b border-line py-4 last:border-b-0">
-                  <div className="relative aspect-4/5 w-14 shrink-0 overflow-hidden bg-mist">
-                    <ProductVisual
-                      name={line.name}
-                      slug={line.slug}
-                      images={line.imageUrl ? [line.imageUrl] : null}
-                      categorySlug={line.categorySlug}
-                      sizes="56px"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[0.8125rem] leading-snug text-ink">{line.name}</p>
-                    <p className="mt-1 text-[0.75rem] text-ash">
-                      T. {line.size} · {line.color}
-                    </p>
-
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <div className="flex items-center border border-line">
-                        <button
-                          type="button"
-                          onClick={() => cart.setQuantity(line.key, line.quantity - 1)}
-                          aria-label={line.quantity === 1 ? "Retirer l'article" : 'Diminuer la quantité'}
-                          className="flex h-7 w-7 items-center justify-center text-ink transition-opacity hover:opacity-50"
-                        >
-                          <MinusIcon className="h-2.5 w-2.5" />
-                        </button>
-                        <span aria-live="polite" className="w-6 text-center text-[0.75rem] text-ink">
-                          {line.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => cart.setQuantity(line.key, line.quantity + 1)}
-                          disabled={atMax}
-                          aria-label="Augmenter la quantité"
-                          className="flex h-7 w-7 items-center justify-center text-ink transition-opacity hover:opacity-50 disabled:opacity-25"
-                        >
-                          <PlusIcon className="h-2.5 w-2.5" />
-                        </button>
-                      </div>
-
-                      <span className="shrink-0 text-[0.8125rem] text-ink">
-                        {formatPrice(line.unitPrice * line.quantity)}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => cart.remove(line.key)}
-                      className="mt-1.5 text-[0.625rem] uppercase tracking-[0.14em] text-ash transition-colors hover:text-ink"
-                    >
-                      Retirer
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
+            {cart.lines.map((line) => (
+              <li key={line.key} className="flex gap-4 border-b border-line py-4 last:border-b-0">
+                <div className="relative aspect-4/5 w-14 shrink-0 overflow-hidden bg-mist">
+                  <ProductVisual
+                    name={line.name}
+                    slug={line.slug}
+                    images={line.imageUrl ? [line.imageUrl] : null}
+                    categorySlug={line.categorySlug}
+                    sizes="56px"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[0.8125rem] leading-snug text-ink">{line.name}</p>
+                  <p className="mt-1 text-[0.75rem] text-ash">
+                    T. {line.size} · {line.color} · ×{line.quantity}
+                  </p>
+                </div>
+                <span className="shrink-0 text-[0.8125rem] text-ink">
+                  {formatPrice(line.unitPrice * line.quantity)}
+                </span>
+              </li>
+            ))}
           </ul>
 
           <dl className="space-y-3 border-t border-line px-6 py-5 text-[0.875rem]">
