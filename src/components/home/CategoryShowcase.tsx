@@ -41,6 +41,7 @@ export async function CategoryShowcase() {
                   <ProductVisual
                     name={collection.name}
                     slug={`univers-${collection.slug}`}
+                    images={collection.imageUrl ? [collection.imageUrl] : undefined}
                     kind={KINDS[collection.slug] ?? 'abstract'}
                     sizes="(max-width: 768px) 100vw, 33vw"
                   />
@@ -70,3 +71,4 @@ export async function CategoryShowcase() {
     </section>
   );
 }
+

@@ -12,6 +12,9 @@ import type { ActionState } from './catalogue';
 /** Invalide les pages affectées par les collections. */
 function revalidateCollections() {
   revalidatePath('/', 'layout');
+  revalidatePath('/', 'page');
+  revalidatePath('/collections');
+  revalidatePath('/c', 'layout');
 }
 
 const collectionSchema = z.object({

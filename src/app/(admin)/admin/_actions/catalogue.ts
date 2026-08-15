@@ -29,6 +29,8 @@ export interface ActionState {
 function revalidateCatalogue(slug?: string) {
   revalidatePath('/', 'page');
   revalidatePath('/boutique');
+  revalidatePath('/collections');
+  revalidatePath('/c', 'layout');
   revalidatePath('/chaussures');
   revalidatePath('/sacs');
   revalidatePath('/accessoires');

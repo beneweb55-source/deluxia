@@ -5,7 +5,10 @@ import { JsonLd } from '@/components/JsonLd';
 import { PageHeader } from '@/components/PageHeader';
 import { ProductVisual, type VisualKind } from '@/components/ProductVisual';
 import { ArrowRightIcon } from '@/components/icons';
+import { getNavCollections } from '@/lib/catalog';
 import { breadcrumbJsonLd } from '@/lib/seo';
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Nos catégories',
@@ -14,35 +17,29 @@ export const metadata: Metadata = {
   alternates: { canonical: '/collections' },
 };
 
-interface Categorie {
-  name: string;
-  href: string;
-  kind: VisualKind;
-  tagline: string;
-}
+/** Silhouette de repli associée à chaque univers connu. */
+const KINDS: Record<string, VisualKind> = {
+  chaussures: 'heel',
+  sacs: 'bag',
+  accessoires: 'wallet',
+  sneakers: 'sneaker',
+};
 
-/**
- * Les trois portes d'entrée mises en avant à la demande de la maison : deux
- * univers (Chaussures, Sacs) et une famille phare (Sneakers).
- *
- * C'est une sélection éditoriale volontairement figée. Elle ne suit pas la liste
- * des collections en base — elle met en avant *exactement* ce que la boutique
- * veut montrer en premier. Les destinations restent, elles, dynamiques : les
- * univers pointent vers `/c/<slug>`, Sneakers vers le catalogue filtré sur sa
- * catégorie, si bien qu'aucun produit n'est jamais figé en dur.
- */
-const CATEGORIES: Categorie[] = [
-  { name: 'Chaussures', href: '/c/chaussures', kind: 'heel', tagline: 'Escarpins, bottines, sandales' },
-  { name: 'Sacs', href: '/c/sacs', kind: 'bag', tagline: 'À main, bandoulière, cabas' },
-  { name: 'Sneakers', href: '/boutique?categorie=sneakers', kind: 'sneaker', tagline: 'Du matin au soir, sans faux pli' },
-];
+/** Tagline par défaut, utilisée si aucune n'est définie en base. */
+const TAGLINES: Record<string, string> = {
+  chaussures: 'Escarpins, bottines, sandales',
+  sacs: 'À main, bandoulière, cabas',
+  accessoires: 'Ceintures, portefeuilles, pochettes',
+};
 
 /**
  * Page « catégories » — destination du bouton « Découvrir la collection » du
- * premier écran. Trois grandes cartes plein cadre, une par univers : la
- * visiteuse choisit sa direction en un geste, sur mobile comme sur ordinateur.
+ * premier écran. Les cartes sont chargées dynamiquement depuis la base : les
+ * images, noms et l'ordre définis dans l'admin se reflètent ici.
  */
-export default function CollectionsPage() {
+export default async function CollectionsPage() {
+  const collections = await getNavCollections();
+
   return (
     <>
       <JsonLd data={breadcrumbJsonLd([{ name: 'Catégories', href: '/collections' }])} />
@@ -56,19 +53,20 @@ export default function CollectionsPage() {
 
       <section className="shell pb-(--spacing-section)">
         <ul className="grid gap-4 md:grid-cols-3 md:gap-6">
-          {CATEGORIES.map((categorie, index) => (
+          {collections.map((collection, index) => (
             <li
-              key={categorie.href}
+              key={collection.slug}
               className="reveal"
               style={{ '--reveal-delay': `${index * 110}ms` } as CSSProperties}
             >
-              <Link href={categorie.href} className="group block">
+              <Link href={`/c/${collection.slug}`} className="group block">
                 <div className="relative aspect-3/4 overflow-hidden bg-mist md:aspect-4/5 lg:aspect-3/4">
                   <div className="absolute inset-0 transition-transform duration-[1400ms] [transition-timing-function:var(--ease-luxe)] group-hover:scale-[1.05]">
                     <ProductVisual
-                      name={categorie.name}
-                      slug={`categorie-${categorie.name.toLowerCase()}`}
-                      kind={categorie.kind}
+                      name={collection.name}
+                      slug={`categorie-${collection.slug}`}
+                      images={collection.imageUrl ? [collection.imageUrl] : undefined}
+                      kind={KINDS[collection.slug] ?? 'abstract'}
                       sizes="(max-width: 768px) 100vw, 33vw"
                     />
                   </div>
@@ -78,10 +76,10 @@ export default function CollectionsPage() {
 
                   <div className="absolute inset-x-0 bottom-0 p-6 lg:p-8">
                     <h2 className="text-[1.75rem] font-light leading-none tracking-[-0.03em] text-ink lg:text-[2.25rem]">
-                      {categorie.name}
+                      {collection.name}
                     </h2>
                     <p className="mt-2.5 text-[0.8125rem] leading-snug text-graphite">
-                      {categorie.tagline}
+                      {TAGLINES[collection.slug] ?? `Découvrir la collection ${collection.name.toLowerCase()}`}
                     </p>
 
                     <span className="mt-5 inline-flex items-center gap-2.5 text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-ink">

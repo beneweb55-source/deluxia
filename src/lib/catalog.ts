@@ -290,12 +290,12 @@ export async function searchProducts(term: string, limit = 10): Promise<ProductC
 // et sans cache cela ferait deux requêtes identiques par page — répétées à chaque
 // requête sur les pages dynamiques du même layout (connexion, inscription…).
 export const getNavCollections = cache(
-  async (): Promise<Array<{ name: string; slug: string }>> => {
+  async (): Promise<Array<{ name: string; slug: string; imageUrl: string | null }>> => {
     try {
       return await withRetry(() =>
         prisma.collection.findMany({
           orderBy: { position: 'asc' },
-          select: { name: true, slug: true },
+          select: { name: true, slug: true, imageUrl: true },
         }),
       );
     } catch (error) {
