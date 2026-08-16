@@ -279,19 +279,22 @@ export async function toggleProductFlag(
  * Même règle de fond : un produit déjà commandé est masqué, pas effacé, sinon
  * l'historique des commandes deviendrait illisible.
  */
-export async function removeProduct(id: string): Promise<void> {
+export async function removeProduct(id: string): Promise<{ message: string }> {
   await requireAdmin();
 
   const orderedCount = await prisma.orderItem.count({ where: { productId: id } });
 
   if (orderedCount > 0) {
     await prisma.product.update({ where: { id }, data: { isActive: false } });
+    revalidateCatalogue();
+    revalidatePath('/admin/produits');
+    return { message: 'Produit masqué car il figure déjà dans une commande.' };
   } else {
     await prisma.product.delete({ where: { id } });
+    revalidateCatalogue();
+    revalidatePath('/admin/produits');
+    return { message: 'Produit supprimé définitivement.' };
   }
-
-  revalidateCatalogue();
-  revalidatePath('/admin/produits');
 }
 
 /**

@@ -132,6 +132,7 @@ export function ProductsTable({ products, hasFilter }: { products: ProductRow[];
               selected={selection.has(product.id)}
               onToggle={() => selection.toggle(product.id)}
               dimmed={pending && selection.has(product.id)}
+              setNotice={setNotice}
             />
           ))
         )}
@@ -212,11 +213,13 @@ function ProductLine({
   selected,
   onToggle,
   dimmed,
+  setNotice,
 }: {
   product: ProductRow;
   selected: boolean;
   onToggle: () => void;
   dimmed: boolean;
+  setNotice: (msg: string) => void;
 }) {
   const [editingPrice, setEditingPrice] = useState(false);
   const [price, setPrice] = useState(String(product.price));
@@ -409,7 +412,10 @@ function ProductLine({
           <QuickAction
             label={`Supprimer ${product.name}`}
             icon={TrashIcon}
-            onAction={() => removeProduct(product.id)}
+            onAction={async () => {
+              const res = await removeProduct(product.id);
+              if (res?.message) setNotice(res.message);
+            }}
             confirm={{
               title: `Supprimer ${product.name} ?`,
               body: 'Si ce produit figure déjà dans une commande, il sera simplement masqué afin de préserver l’historique. Sinon, il est définitivement supprimé.',
