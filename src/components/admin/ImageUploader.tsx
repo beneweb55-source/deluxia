@@ -60,11 +60,11 @@ export function ImageUploader({
       }
 
       const selected = Array.from(files)
-        .filter((file) => file.type.startsWith('image/'))
+        .filter((file) => file.type.startsWith('image/') || file.name.toLowerCase().match(/\.hei[cf]$/))
         .slice(0, room);
 
       if (selected.length === 0) {
-        setError('Choisissez des fichiers image (JPEG, PNG ou WebP).');
+        setError('Choisissez des fichiers image (JPEG, PNG, WebP, HEIC).');
         return;
       }
 
@@ -84,10 +84,20 @@ export function ImageUploader({
           body.append('file', compressed, compressed.name);
 
           const response = await fetch('/api/admin/media', { method: 'POST', body });
-          const data = (await response.json()) as { url?: string; message?: string };
+          let data: { url?: string; message?: string } = {};
+
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+          }
 
           if (!response.ok || !data.url) {
-            throw new Error(data.message ?? 'Envoi refusé.');
+            throw new Error(
+              data.message ??
+                (response.status === 413
+                  ? 'Image trop lourde (4 Mo maximum).'
+                  : `Erreur serveur (${response.status})`),
+            );
           }
 
           setUrls((current) => [...current, data.url!]);
@@ -151,7 +161,7 @@ export function ImageUploader({
           ref={inputRef}
           id={inputId}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/avif"
+          accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif"
           multiple
           onChange={(event) => void handleFiles(event.target.files)}
           className="sr-only"
@@ -170,7 +180,7 @@ export function ImageUploader({
           <span className="hidden sm:inline"> Sur ordinateur, vous pouvez aussi déposer les fichiers ici.</span>
         </p>
         <p className="mt-1.5 text-[0.75rem] text-ash">
-          {urls.length} / {MAX_IMAGES} visuels · JPEG, PNG ou WebP · compression automatique
+          {urls.length} / {MAX_IMAGES} visuels · JPEG, PNG, WebP, HEIC · compression automatique
         </p>
       </div>
 
@@ -284,7 +294,25 @@ export function ImageUploader({
  */
 async function compress(file: File): Promise<File> {
   try {
-    const bitmap = await createImageBitmap(file);
+    let sourceFile = file;
+    const isHeic =
+      file.type === 'image/heic' ||
+      file.type === 'image/heif' ||
+      file.name.toLowerCase().match(/\.hei[cf]$/);
+
+    if (isHeic) {
+      const heic2any = (await import('heic2any')).default;
+      const convertedBlob = await heic2any({
+        blob: file,
+        toType: 'image/jpeg',
+        quality: 0.9,
+      });
+      const blob = Array.isArray(convertedBlob) ? convertedBlob[0]! : convertedBlob;
+      const baseName = file.name.replace(/\.hei[cf]$/i, '.jpg');
+      sourceFile = new File([blob], baseName, { type: 'image/jpeg' });
+    }
+
+    const bitmap = await createImageBitmap(sourceFile);
     const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
 
     const width = Math.round(bitmap.width * scale);
@@ -351,9 +379,11 @@ export function SingleImageUploader({
       if (!files || files.length === 0) return;
       setError(null);
 
-      const file = Array.from(files).find((f) => f.type.startsWith('image/'));
+      const file = Array.from(files).find(
+        (f) => f.type.startsWith('image/') || f.name.toLowerCase().match(/\.hei[cf]$/),
+      );
       if (!file) {
-        setError('Choisissez un fichier image (JPEG, PNG ou WebP).');
+        setError('Choisissez un fichier image (JPEG, PNG, WebP, HEIC).');
         return;
       }
 
@@ -368,10 +398,20 @@ export function SingleImageUploader({
         body.append('file', compressed, compressed.name);
 
         const response = await fetch('/api/admin/media', { method: 'POST', body });
-        const data = (await response.json()) as { url?: string; message?: string };
+        let data: { url?: string; message?: string } = {};
+
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+        }
 
         if (!response.ok || !data.url) {
-          throw new Error(data.message ?? 'Envoi refusé.');
+          throw new Error(
+            data.message ??
+              (response.status === 413
+                ? 'Image trop lourde (4 Mo maximum).'
+                : `Erreur serveur (${response.status})`),
+          );
         }
 
         setUrl(data.url);
@@ -435,7 +475,7 @@ export function SingleImageUploader({
             ref={inputRef}
             id={inputId}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif"
+            accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif"
             onChange={(event) => void handleFiles(event.target.files)}
             className="sr-only"
           />
@@ -458,7 +498,7 @@ export function SingleImageUploader({
             ref={inputRef}
             id={inputId}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif"
+            accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif"
             onChange={(event) => void handleFiles(event.target.files)}
             className="sr-only"
           />
@@ -472,7 +512,7 @@ export function SingleImageUploader({
           </label>
 
           <p className="mt-3 text-[0.75rem] text-ash">
-            JPEG, PNG ou WebP · compression automatique
+            JPEG, PNG, WebP, HEIC · compression automatique
           </p>
         </div>
       )}

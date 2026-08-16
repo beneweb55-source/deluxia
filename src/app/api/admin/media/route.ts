@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
+import { put } from '@vercel/blob';
 
 /**
  * Réception d'un visuel produit.
@@ -63,24 +63,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const asset = await prisma.mediaAsset.create({
-    data: {
-      filename: sanitizeName(uploadedFile.name),
-      mimeType: uploadedFile.type,
-      width: dimensions.width,
-      height: dimensions.height,
-      size: bytes.byteLength,
-      data: bytes,
-    },
-    select: { id: true, width: true, height: true, size: true },
+  const filename = sanitizeName(uploadedFile.name);
+
+  const blob = await put(filename, uploadedFile, {
+    access: 'public',
   });
 
   return NextResponse.json(
     {
-      url: `/api/media/${asset.id}`,
-      width: asset.width,
-      height: asset.height,
-      size: asset.size,
+      url: blob.url,
+      width: dimensions.width,
+      height: dimensions.height,
+      size: uploadedFile.size,
     },
     { status: 201 },
   );
