@@ -33,26 +33,28 @@ export async function POST(request: Request) {
 
   const file = form.get('file');
 
-  if (!(file instanceof File)) {
+  if (!file || typeof file === 'string' || typeof (file as File).arrayBuffer !== 'function') {
     return NextResponse.json({ message: 'Aucun fichier reçu.' }, { status: 400 });
   }
 
-  if (!ALLOWED.has(file.type)) {
+  const uploadedFile = file as File;
+
+  if (!ALLOWED.has(uploadedFile.type)) {
     return NextResponse.json(
       { message: 'Format non pris en charge. Utilisez JPEG, PNG ou WebP.' },
       { status: 415 },
     );
   }
 
-  if (file.size === 0 || file.size > MAX_BYTES) {
+  if (uploadedFile.size === 0 || uploadedFile.size > MAX_BYTES) {
     return NextResponse.json(
       { message: 'Image trop lourde (4 Mo maximum après compression).' },
       { status: 413 },
     );
   }
 
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const dimensions = readDimensions(bytes, file.type);
+  const bytes = Buffer.from(await uploadedFile.arrayBuffer());
+  const dimensions = readDimensions(bytes, uploadedFile.type);
 
   if (!dimensions) {
     return NextResponse.json(
@@ -63,8 +65,8 @@ export async function POST(request: Request) {
 
   const asset = await prisma.mediaAsset.create({
     data: {
-      filename: sanitizeName(file.name),
-      mimeType: file.type,
+      filename: sanitizeName(uploadedFile.name),
+      mimeType: uploadedFile.type,
       width: dimensions.width,
       height: dimensions.height,
       size: bytes.byteLength,
