@@ -328,16 +328,23 @@ async function compress(file: File): Promise<File> {
     context.drawImage(bitmap, 0, 0, width, height);
     bitmap.close();
 
-    const blob = await new Promise<Blob | null>((resolve) => {
+    let blob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob(resolve, 'image/webp', QUALITY);
     });
 
-    // Un navigateur sans encodeur WebP renvoie du PNG, souvent plus lourd que
-    // l'original : dans ce cas on conserve le fichier de départ.
-    if (!blob || blob.type !== 'image/webp' || blob.size >= file.size) return file;
+    // Un navigateur sans encodeur WebP (ex: anciens iPhone) renvoie du PNG.
+    // Dans ce cas, on bascule sur une compression JPEG classique.
+    if (!blob || blob.type !== 'image/webp') {
+      blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, 'image/jpeg', QUALITY);
+      });
+    }
+
+    if (!blob || blob.size >= file.size) return file;
 
     const base = file.name.replace(/\.[^.]+$/, '') || 'visuel';
-    return new File([blob], `${base}.webp`, { type: 'image/webp' });
+    const ext = blob.type === 'image/jpeg' ? 'jpg' : 'webp';
+    return new File([blob], `${base}.${ext}`, { type: blob.type });
   } catch {
     return file;
   }
