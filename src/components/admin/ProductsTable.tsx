@@ -156,8 +156,8 @@ export function ProductsTable({ products, hasFilter }: { products: ProductRow[];
       {asking && (
         <ConfirmDialog
           title={`Supprimer ${selection.count} produit${selection.count > 1 ? 's' : ''} ?`}
-          body="Les produits qui figurent déjà dans une commande sont masqués plutôt qu’effacés, afin que l’historique reste lisible. Les autres sont définitivement supprimés."
-          actionLabel="Supprimer"
+          body="Cette action est irréversible. Les produits seront définitivement supprimés de la boutique."
+          actionLabel="Tout supprimer"
           onConfirm={runDelete}
           onCancel={() => setAsking(false)}
         />
@@ -418,7 +418,7 @@ function ProductLine({
             }}
             confirm={{
               title: `Supprimer ${product.name} ?`,
-              body: 'Si ce produit figure déjà dans une commande, il sera simplement masqué afin de préserver l’historique. Sinon, il est définitivement supprimé.',
+              body: 'Cette action est irréversible. Le produit sera définitivement supprimé de la boutique.',
               action: 'Supprimer',
             }}
           />

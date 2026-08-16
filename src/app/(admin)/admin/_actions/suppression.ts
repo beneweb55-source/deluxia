@@ -53,36 +53,14 @@ export async function bulkRemoveProducts(ids: string[]): Promise<DeletionResult>
   const selection = ids.slice(0, MAX_SELECTION);
   if (selection.length === 0) return { supprimes: 0, masques: 0, message: 'Aucun produit sélectionné.' };
 
-  const ordered = await prisma.orderItem.findMany({
-    where: { productId: { in: selection } },
-    select: { productId: true },
-    distinct: ['productId'],
-  });
-
-  const orderedIds = new Set(ordered.map((item) => item.productId).filter(Boolean) as string[]);
-  const deletable = selection.filter((id) => !orderedIds.has(id));
-
-  if (orderedIds.size > 0) {
-    await prisma.product.updateMany({
-      where: { id: { in: [...orderedIds] } },
-      data: { isActive: false },
-    });
-  }
-
-  if (deletable.length > 0) {
-    await prisma.product.deleteMany({ where: { id: { in: deletable } } });
-  }
+  await prisma.product.deleteMany({ where: { id: { in: selection } } });
 
   revalidateAll();
 
-  const parts: string[] = [];
-  if (deletable.length > 0) parts.push(`${deletable.length} produit${deletable.length > 1 ? 's' : ''} supprimé${deletable.length > 1 ? 's' : ''}`);
-  if (orderedIds.size > 0) parts.push(`${orderedIds.size} masqué${orderedIds.size > 1 ? 's' : ''} car déjà commandé${orderedIds.size > 1 ? 's' : ''}`);
-
   return {
-    supprimes: deletable.length,
-    masques: orderedIds.size,
-    message: parts.join(', ') + '.',
+    supprimes: selection.length,
+    masques: 0,
+    message: `${selection.length} produit${selection.length > 1 ? 's' : ''} supprimé${selection.length > 1 ? 's' : ''}.`,
   };
 }
 
@@ -110,55 +88,23 @@ export async function bulkDeleteCategories(ids: string[]): Promise<DeletionResul
 
   const productResult = await bulkRemoveProductsInternal(products.map((p) => p.id));
 
-  // Une catégorie qui contient encore des produits masqués ne peut pas être
-  // effacée : on la désactive, ce qui la retire de la boutique sans rien perdre.
-  const remaining = await prisma.product.groupBy({
-    by: ['categoryId'],
-    where: { categoryId: { in: selection } },
-    _count: { _all: true },
-  });
-
-  const blocked = new Set(remaining.map((row) => row.categoryId));
-  const deletable = selection.filter((id) => !blocked.has(id));
-
-  if (blocked.size > 0) {
-    await prisma.category.updateMany({ where: { id: { in: [...blocked] } }, data: { isActive: false } });
-  }
-  if (deletable.length > 0) {
-    await prisma.category.deleteMany({ where: { id: { in: deletable } } });
-  }
+  await prisma.category.deleteMany({ where: { id: { in: selection } } });
 
   revalidateAll();
 
-  const parts = [`${deletable.length} catégorie${deletable.length > 1 ? 's' : ''} supprimée${deletable.length > 1 ? 's' : ''}`];
-  if (blocked.size > 0) parts.push(`${blocked.size} masquée${blocked.size > 1 ? 's' : ''} (produits déjà commandés)`);
+  const parts = [`${selection.length} catégorie${selection.length > 1 ? 's' : ''} supprimée${selection.length > 1 ? 's' : ''}`];
   if (productResult.supprimes > 0) parts.push(`${productResult.supprimes} produit${productResult.supprimes > 1 ? 's' : ''} supprimé${productResult.supprimes > 1 ? 's' : ''}`);
-  if (productResult.masques > 0) parts.push(`${productResult.masques} produit${productResult.masques > 1 ? 's' : ''} masqué${productResult.masques > 1 ? 's' : ''}`);
 
-  return { supprimes: deletable.length, masques: blocked.size, message: parts.join(', ') + '.' };
+  return { supprimes: selection.length, masques: 0, message: parts.join(', ') + '.' };
 }
 
 /** Variante interne : même logique produit, sans revalidation intermédiaire. */
 async function bulkRemoveProductsInternal(ids: string[]): Promise<DeletionResult> {
   if (ids.length === 0) return { supprimes: 0, masques: 0, message: '' };
 
-  const ordered = await prisma.orderItem.findMany({
-    where: { productId: { in: ids } },
-    select: { productId: true },
-    distinct: ['productId'],
-  });
+  await prisma.product.deleteMany({ where: { id: { in: ids } } });
 
-  const orderedIds = new Set(ordered.map((item) => item.productId).filter(Boolean) as string[]);
-  const deletable = ids.filter((id) => !orderedIds.has(id));
-
-  if (orderedIds.size > 0) {
-    await prisma.product.updateMany({ where: { id: { in: [...orderedIds] } }, data: { isActive: false } });
-  }
-  if (deletable.length > 0) {
-    await prisma.product.deleteMany({ where: { id: { in: deletable } } });
-  }
-
-  return { supprimes: deletable.length, masques: orderedIds.size, message: '' };
+  return { supprimes: ids.length, masques: 0, message: '' };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -188,30 +134,12 @@ export async function bulkDeleteCollections(ids: string[]): Promise<DeletionResu
       ? await bulkDeleteCategories(categories.map((c) => c.id))
       : { supprimes: 0, masques: 0, message: '' };
 
-  // Une collection dont une catégorie a dû être conservée ne peut pas être
-  // effacée non plus : elle est alors désactivée.
-  const stillLinked = await prisma.category.groupBy({
-    by: ['collectionId'],
-    where: { collectionId: { in: selection } },
-    _count: { _all: true },
-  });
-
-  const blocked = new Set(stillLinked.map((row) => row.collectionId).filter(Boolean) as string[]);
-  const deletable = selection.filter((id) => !blocked.has(id));
-
-  if (blocked.size > 0) {
-    await prisma.collection.updateMany({ where: { id: { in: [...blocked] } }, data: { isActive: false } });
-  }
-  if (deletable.length > 0) {
-    await prisma.collection.deleteMany({ where: { id: { in: deletable } } });
-  }
+  await prisma.collection.deleteMany({ where: { id: { in: selection } } });
 
   revalidateAll();
 
-  const parts = [`${deletable.length} collection${deletable.length > 1 ? 's' : ''} supprimée${deletable.length > 1 ? 's' : ''}`];
-  if (blocked.size > 0) parts.push(`${blocked.size} masquée${blocked.size > 1 ? 's' : ''}`);
-  if (categoryResult.supprimes > 0) parts.push(`${categoryResult.supprimes} catégorie${categoryResult.supprimes > 1 ? 's' : ''}`);
+  const parts = [`${selection.length} collection${selection.length > 1 ? 's' : ''} supprimée${selection.length > 1 ? 's' : ''}`];
   if (categoryResult.message) parts.push(categoryResult.message.replace(/\.$/, ''));
 
-  return { supprimes: deletable.length, masques: blocked.size, message: parts.join(', ') + '.' };
+  return { supprimes: selection.length, masques: 0, message: parts.join(', ') + '.' };
 }

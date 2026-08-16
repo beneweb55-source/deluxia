@@ -93,12 +93,8 @@ export default async function AdminProduitsPage({
       )}
 
       {supprime && (
-        <p
-          role="status"
-          className="mb-8 border-l-2 border-ink pl-4 text-[0.875rem] leading-relaxed text-ink"
-        >
-          Produit supprimé. S’il figurait déjà dans des commandes, il a seulement été masqué afin de
-          préserver l’historique.
+        <p className="mb-6 border-l-2 border-ink pl-4 text-[0.8125rem] text-ink">
+          Produit supprimé avec succès.
         </p>
       )}
 

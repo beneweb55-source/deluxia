@@ -193,7 +193,7 @@ export function CategoryManager({ categories, collections }: { categories: Categ
           body={
             productTotal === 0
               ? 'Ces catégories ne contiennent aucun produit. Rien d’autre ne sera supprimé.'
-              : `Cette action supprime aussi ${productTotal} produit${productTotal > 1 ? 's' : ''}. Ceux qui figurent déjà dans une commande sont masqués plutôt qu’effacés, afin que l’historique reste lisible. Cette action est irréversible.`
+              : `Cette action supprime aussi ${productTotal} produit${productTotal > 1 ? 's' : ''}. Cette action est irréversible.`
           }
           actionLabel="Tout supprimer"
           onConfirm={runDelete}

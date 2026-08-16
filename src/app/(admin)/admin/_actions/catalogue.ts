@@ -238,15 +238,7 @@ export async function updateProduct(
  */
 export async function deleteProduct(id: string): Promise<void> {
   await requireAdmin();
-
-  const orderedCount = await prisma.orderItem.count({ where: { productId: id } });
-
-  if (orderedCount > 0) {
-    await prisma.product.update({ where: { id }, data: { isActive: false } });
-  } else {
-    await prisma.product.delete({ where: { id } });
-  }
-
+  await prisma.product.delete({ where: { id } });
   revalidateCatalogue();
   redirect('/admin/produits?supprime=1');
 }
@@ -281,20 +273,10 @@ export async function toggleProductFlag(
  */
 export async function removeProduct(id: string): Promise<{ message: string }> {
   await requireAdmin();
-
-  const orderedCount = await prisma.orderItem.count({ where: { productId: id } });
-
-  if (orderedCount > 0) {
-    await prisma.product.update({ where: { id }, data: { isActive: false } });
-    revalidateCatalogue();
-    revalidatePath('/admin/produits');
-    return { message: 'Produit masqué car il figure déjà dans une commande.' };
-  } else {
-    await prisma.product.delete({ where: { id } });
-    revalidateCatalogue();
-    revalidatePath('/admin/produits');
-    return { message: 'Produit supprimé définitivement.' };
-  }
+  await prisma.product.delete({ where: { id } });
+  revalidateCatalogue();
+  revalidatePath('/admin/produits');
+  return { message: 'Produit supprimé définitivement.' };
 }
 
 /**

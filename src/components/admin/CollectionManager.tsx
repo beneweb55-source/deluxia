@@ -173,7 +173,7 @@ export function CollectionManager({ collections }: { collections: CollectionRow[
           body={
             categoryTotal + productTotal === 0
               ? 'Ces collections sont vides. Rien d’autre ne sera supprimé.'
-              : `Cette action supprime aussi ${categoryTotal} catégorie${categoryTotal > 1 ? 's' : ''} et ${productTotal} produit${productTotal > 1 ? 's' : ''}. Les produits figurant déjà dans une commande sont masqués plutôt qu’effacés, afin que l’historique reste lisible. Cette action est irréversible.`
+              : `Cette action supprime aussi ${categoryTotal} catégorie${categoryTotal > 1 ? 's' : ''} et ${productTotal} produit${productTotal > 1 ? 's' : ''}. Cette action est irréversible.`
           }
           actionLabel="Tout supprimer"
           onConfirm={runDelete}
