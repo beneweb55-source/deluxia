@@ -34,10 +34,17 @@ export function Header({ navLinks }: { navLinks: NavLink[] }) {
   const favorites = useFavorites();
   const { user } = useSession();
 
-  // Passage de l'état transparent à l'état plein.
+  // Passage de l'état transparent à l'état plein avec hystérésis (éviter le clignotement / layout thrashing).
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
+    const onScroll = () => {
+      setScrolled((prev) => {
+        if (!prev && window.scrollY > 60) return true;
+        if (prev && window.scrollY < 10) return false;
+        return prev;
+      });
+    };
+    // Exécution initiale immédiate (sans setScrolled callback)
+    setScrolled(window.scrollY > 60);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
