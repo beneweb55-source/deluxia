@@ -139,8 +139,7 @@ export function Hero() {
             className="enter mt-7 text-[0.9375rem] font-light leading-[1.7] text-graphite"
             style={{ ...delay(440), maxWidth: '28rem' }}
           >
-            Des pièces rares, pensées pour celles<br />
-            qui savent ce qu&apos;elles veulent.
+            Des pièces d'exception pensées pour vous.
           </p>
 
           {/* Séparateur */}
