@@ -364,7 +364,7 @@ async function compress(file: File): Promise<File> {
 
 function loadImageFallback(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
+    const img = new window.Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
