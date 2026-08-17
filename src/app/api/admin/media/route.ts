@@ -85,6 +85,7 @@ export async function POST(request: Request) {
     const blob = await put(filename, bytes, {
       access: 'public',
       contentType: mimeType,
+      addRandomSuffix: true,
     });
 
     return NextResponse.json(
