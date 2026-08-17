@@ -65,19 +65,35 @@ export async function POST(request: Request) {
 
   const filename = sanitizeName(uploadedFile.name);
 
-  const blob = await put(filename, uploadedFile, {
-    access: 'public',
-  });
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json(
+      { message: "Le stockage d'images n'est pas configuré (BLOB_READ_WRITE_TOKEN manquant)." },
+      { status: 500 },
+    );
+  }
 
-  return NextResponse.json(
-    {
-      url: blob.url,
-      width: dimensions.width,
-      height: dimensions.height,
-      size: uploadedFile.size,
-    },
-    { status: 201 },
-  );
+  try {
+    const blob = await put(filename, bytes, {
+      access: 'public',
+      contentType: uploadedFile.type,
+    });
+
+    return NextResponse.json(
+      {
+        url: blob.url,
+        width: dimensions.width,
+        height: dimensions.height,
+        size: uploadedFile.size,
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error('[media API]', error);
+    return NextResponse.json(
+      { message: "L'envoi vers le serveur de stockage a échoué." },
+      { status: 500 },
+    );
+  }
 }
 
 /** Retire tout ce qui pourrait poser problème dans un nom de fichier affiché. */

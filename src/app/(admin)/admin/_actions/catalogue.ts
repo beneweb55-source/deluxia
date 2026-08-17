@@ -23,6 +23,7 @@ import { slugify } from '@/lib/format';
 export interface ActionState {
   error?: string;
   success?: string;
+  payload?: any;
 }
 
 /** Invalide les pages qui affichent du catalogue. */
@@ -116,6 +117,22 @@ function readProductForm(formData: FormData) {
   });
 }
 
+function getRawPayload(formData: FormData) {
+  return {
+    name: formData.get('name')?.toString() ?? '',
+    slug: formData.get('slug')?.toString() ?? '',
+    sku: formData.get('sku')?.toString() ?? '',
+    subtitle: formData.get('subtitle')?.toString() ?? '',
+    categoryId: formData.get('categoryId')?.toString() ?? '',
+    position: formData.get('position')?.toString() ?? '',
+    description: formData.get('description')?.toString() ?? '',
+    composition: formData.get('composition')?.toString() ?? '',
+    care: formData.get('care')?.toString() ?? '',
+    price: formData.get('price')?.toString() ?? '',
+    comparePrice: formData.get('comparePrice')?.toString() ?? '',
+  };
+}
+
 /** Message clair pour les violations de contrainte d'unicité. */
 function uniqueError(error: unknown): string | null {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') return null;
@@ -129,7 +146,8 @@ export async function createProduct(_prev: ActionState, formData: FormData): Pro
   await requireAdmin();
 
   const parsed = readProductForm(formData);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Formulaire invalide.' };
+  const payload = getRawPayload(formData);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Formulaire invalide.', payload };
 
   const data = parsed.data;
   const slug = slugify(data.slug || data.name);
@@ -162,9 +180,9 @@ export async function createProduct(_prev: ActionState, formData: FormData): Pro
     });
   } catch (error) {
     const message = uniqueError(error);
-    if (message) return { error: message };
+    if (message) return { error: message, payload };
     console.error('[admin] création produit', error);
-    return { error: "Le produit n'a pas pu être créé." };
+    return { error: "Le produit n'a pas pu être créé.", payload };
   }
 
   revalidateCatalogue(created.slug);
@@ -179,7 +197,8 @@ export async function updateProduct(
   await requireAdmin();
 
   const parsed = readProductForm(formData);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Formulaire invalide.' };
+  const payload = getRawPayload(formData);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Formulaire invalide.', payload };
 
   const data = parsed.data;
   const slug = slugify(data.slug || data.name);
@@ -222,9 +241,9 @@ export async function updateProduct(
     });
   } catch (error) {
     const message = uniqueError(error);
-    if (message) return { error: message };
+    if (message) return { error: message, payload };
     console.error('[admin] mise à jour produit', error);
-    return { error: "Le produit n'a pas pu être enregistré." };
+    return { error: "Le produit n'a pas pu être enregistré.", payload };
   }
 
   revalidateCatalogue(slug);

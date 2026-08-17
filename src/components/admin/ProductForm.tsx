@@ -138,7 +138,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               name="name"
               required
               maxLength={120}
-              defaultValue={product?.name}
+              defaultValue={state.payload?.name ?? product?.name}
               placeholder="Escarpin Vérone"
               className="sm:col-span-2"
             />
@@ -147,7 +147,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               label="Adresse URL (slug)"
               name="slug"
               maxLength={90}
-              defaultValue={product?.slug}
+              defaultValue={state.payload?.slug ?? product?.slug}
               hint="Laissez vide pour la déduire du nom."
               placeholder="escarpin-verone"
             />
@@ -157,7 +157,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               name="sku"
               required
               maxLength={40}
-              defaultValue={product?.sku}
+              defaultValue={state.payload?.sku ?? product?.sku}
               placeholder="DLX-CH-0001"
             />
 
@@ -165,7 +165,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               label="Accroche"
               name="subtitle"
               maxLength={160}
-              defaultValue={product?.subtitle ?? ''}
+              defaultValue={state.payload?.subtitle ?? product?.subtitle ?? ''}
               hint="Une ligne affichée sous le nom sur la fiche produit."
               placeholder="Cuir de veau, talon 85 mm"
               className="sm:col-span-2"
@@ -175,7 +175,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               label="Catégorie"
               name="categoryId"
               required
-              defaultValue={product?.categoryId ?? ''}
+              defaultValue={state.payload?.categoryId ?? product?.categoryId ?? ''}
             >
               <option value="" disabled>
                 Choisissez une catégorie
@@ -194,7 +194,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               min={0}
               max={9999}
               step={1}
-              defaultValue={product?.position ?? 0}
+              defaultValue={state.payload?.position ?? product?.position ?? 0}
               hint="Les petits nombres apparaissent en premier."
             />
 
@@ -204,7 +204,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               required
               rows={6}
               maxLength={4000}
-              defaultValue={product?.description}
+              defaultValue={state.payload?.description ?? product?.description}
               hint="Dix caractères au minimum. Décrivez la matière, la ligne, l'usage."
               className="sm:col-span-2"
             />
@@ -214,7 +214,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               name="composition"
               rows={4}
               maxLength={2000}
-              defaultValue={product?.composition ?? ''}
+              defaultValue={state.payload?.composition ?? product?.composition ?? ''}
               placeholder="Dessus cuir de veau, doublure cuir, semelle cuir"
             />
 
@@ -223,7 +223,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               name="care"
               rows={4}
               maxLength={2000}
-              defaultValue={product?.care ?? ''}
+              defaultValue={state.payload?.care ?? product?.care ?? ''}
               placeholder="Nettoyer avec un chiffon doux, conserver dans sa housse"
             />
           </div>
@@ -238,7 +238,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               required
               min={1}
               step={1}
-              defaultValue={product?.price}
+              defaultValue={state.payload?.price ?? product?.price}
               placeholder="24900"
             />
 
@@ -248,7 +248,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               type="number"
               min={0}
               step={1}
-              defaultValue={product?.comparePrice ?? ''}
+              defaultValue={state.payload?.comparePrice ?? product?.comparePrice ?? ''}
               hint="Laissez vide hors promotion. Doit dépasser le prix de vente."
               placeholder="32000"
             />
@@ -289,6 +289,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
                     <input
                       type="text"
                       inputMode="numeric"
+                      required
                       maxLength={12}
                       value={row.size}
                       onChange={(event) => updateVariant(row.key, { size: event.target.value })}
@@ -301,6 +302,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
                   <RowField label="Couleur">
                     <input
                       type="text"
+                      required
                       maxLength={40}
                       value={row.color}
                       onChange={(event) => updateVariant(row.key, { color: event.target.value })}
@@ -372,17 +374,17 @@ export function ProductForm({ categories, product }: ProductFormProps) {
             <Check
               name="isActive"
               label="Visible sur la boutique"
-              defaultChecked={product?.isActive ?? true}
+              defaultChecked={state.payload ? state.payload.isActive : (product?.isActive ?? true)}
             />
             <Check
               name="isFeatured"
               label="Mettre en avant sur l'accueil"
-              defaultChecked={product?.isFeatured ?? false}
+              defaultChecked={state.payload ? state.payload.isFeatured : (product?.isFeatured ?? false)}
             />
             <Check
               name="isNew"
               label="Signaler comme nouveauté"
-              defaultChecked={product?.isNew ?? false}
+              defaultChecked={state.payload ? state.payload.isNew : (product?.isNew ?? false)}
             />
           </div>
         </Section>
