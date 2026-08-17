@@ -130,6 +130,9 @@ function getRawPayload(formData: FormData) {
     care: formData.get('care')?.toString() ?? '',
     price: formData.get('price')?.toString() ?? '',
     comparePrice: formData.get('comparePrice')?.toString() ?? '',
+    isActive: formData.get('isActive') === 'on',
+    isFeatured: formData.get('isFeatured') === 'on',
+    isNew: formData.get('isNew') === 'on',
   };
 }
 

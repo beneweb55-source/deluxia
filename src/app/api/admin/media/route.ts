@@ -39,7 +39,16 @@ export async function POST(request: Request) {
 
   const uploadedFile = file as File;
 
-  if (!ALLOWED.has(uploadedFile.type)) {
+  let mimeType = uploadedFile.type;
+  if (!mimeType) {
+    const ext = uploadedFile.name.split('.').pop()?.toLowerCase();
+    if (ext === 'webp') mimeType = 'image/webp';
+    else if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+    else if (ext === 'png') mimeType = 'image/png';
+    else if (ext === 'avif') mimeType = 'image/avif';
+  }
+
+  if (!ALLOWED.has(mimeType)) {
     return NextResponse.json(
       { message: 'Format non pris en charge. Utilisez JPEG, PNG ou WebP.' },
       { status: 415 },
@@ -54,7 +63,7 @@ export async function POST(request: Request) {
   }
 
   const bytes = Buffer.from(await uploadedFile.arrayBuffer());
-  const dimensions = readDimensions(bytes, uploadedFile.type);
+  const dimensions = readDimensions(bytes, mimeType);
 
   if (!dimensions) {
     return NextResponse.json(
@@ -75,7 +84,7 @@ export async function POST(request: Request) {
   try {
     const blob = await put(filename, bytes, {
       access: 'public',
-      contentType: uploadedFile.type,
+      contentType: mimeType,
     });
 
     return NextResponse.json(

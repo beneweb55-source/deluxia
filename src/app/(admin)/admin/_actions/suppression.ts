@@ -12,10 +12,9 @@ import { requireAdmin } from '@/lib/auth';
  * — produits, puis catégories, puis collection — car les relations Prisma sont
  * en `Restrict` et refusent d'effacer un parent encore référencé.
  *
- * Ce que la suppression d'un produit déjà commandé ne casse pas : chaque ligne
- * de commande conserve une copie figée du nom, de la taille, de la couleur et
- * du prix. Le lien vers la fiche produit disparaît, l'historique reste lisible
- * et les totaux restent justes.
+ * Attention : la suppression d'un produit efface définitivement sa fiche. 
+ * Cependant, les lignes de commandes existantes conservent une copie de sécurité
+ * (nom, taille, couleur, prix) pour que l'historique reste toujours lisible.
  */
 
 /** Rafraîchit tout ce qui dépend du catalogue. */
@@ -42,10 +41,8 @@ export interface DeletionResult {
 /**
  * Supprime plusieurs produits d'un coup.
  *
- * Un produit déjà commandé est **masqué** plutôt que supprimé : la gérante
- * consulte encore ces fiches depuis l'historique des commandes, et les effacer
- * casserait ce lien. Le compte rendu distingue les deux cas pour qu'elle sache
- * exactement ce qui s'est passé.
+ * Supprime systématiquement les produits sélectionnés (suppression absolue),
+ * qu'ils soient commandés ou non.
  */
 export async function bulkRemoveProducts(ids: string[]): Promise<DeletionResult> {
   await requireAdmin();
@@ -116,7 +113,7 @@ async function bulkRemoveProductsInternal(ids: string[]): Promise<DeletionResult
  *
  * C'est l'action la plus destructrice de l'administration. Elle descend la
  * hiérarchie dans l'ordre imposé par les contraintes de clés étrangères, et
- * conserve — masqués — les produits qui apparaissent dans une commande.
+ * supprime systématiquement les catégories et les produits rattachés.
  */
 export async function bulkDeleteCollections(ids: string[]): Promise<DeletionResult> {
   await requireAdmin();

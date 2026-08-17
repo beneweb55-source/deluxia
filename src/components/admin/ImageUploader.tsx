@@ -60,7 +60,7 @@ export function ImageUploader({
       }
 
       const selected = Array.from(files)
-        .filter((file) => file.type.startsWith('image/') || file.name.toLowerCase().match(/\.hei[cf]$/))
+        .filter((file) => file.type.startsWith('image/') || file.name.toLowerCase().match(/\.(hei[cf]|webp|jpe?g|png)$/))
         .slice(0, room);
 
       if (selected.length === 0) {
@@ -387,7 +387,7 @@ export function SingleImageUploader({
       setError(null);
 
       const file = Array.from(files).find(
-        (f) => f.type.startsWith('image/') || f.name.toLowerCase().match(/\.hei[cf]$/),
+        (f) => f.type.startsWith('image/') || f.name.toLowerCase().match(/\.(hei[cf]|webp|jpe?g|png)$/),
       );
       if (!file) {
         setError('Choisissez un fichier image (JPEG, PNG, WebP, HEIC).');
