@@ -254,7 +254,16 @@ export async function getFilterFacets(collectionSlug?: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function searchProducts(term: string, limit = 10): Promise<ProductCardData[]> {
-  const query = term.trim().split(/\s+/).map(w => `${w}:*`).join(' & ');
+  const words = term
+    .normalize('NFKC')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (words.length === 0) return [];
+
+  const query = words.map((w) => `${w}:*`).join(' & ');
   if (query.length < 2) return [];
 
   return withRetry(() =>

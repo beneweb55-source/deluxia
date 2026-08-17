@@ -57,7 +57,9 @@ export default async function CollectionPage({
         crumbs={[{ name: collection.name, href: `/c/${slug}` }]}
       />
 
-      <SubCategoryGrid categories={facets.categories as any} collectionSlug={slug} />
+      {!filters.categorySlug && (
+        <SubCategoryGrid categories={facets.categories as any} collectionSlug={slug} />
+      )}
 
       <CatalogSection products={products} facets={facets} />
     </>

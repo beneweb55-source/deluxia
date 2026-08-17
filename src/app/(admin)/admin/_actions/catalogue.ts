@@ -70,7 +70,7 @@ const productSchema = z
     price: z.coerce.number().int().min(1, 'Le prix doit être supérieur à zéro.').max(10_000_000),
     comparePrice: z.coerce.number().int().min(0).max(10_000_000).optional(),
     categoryId: z.string().min(1, 'Choisissez une catégorie.'),
-    images: z.array(z.string().trim().max(500)).max(10).default([]),
+    images: z.array(z.string().url("L'image doit être une URL valide.").trim().max(500)).max(10).default([]),
     isActive: z.boolean().default(true),
     isFeatured: z.boolean().default(false),
     isNew: z.boolean().default(false),

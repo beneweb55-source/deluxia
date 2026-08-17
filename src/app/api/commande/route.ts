@@ -76,8 +76,10 @@ export async function POST(request: Request) {
     );
   }
 
-  try {
-    const order = await prisma.$transaction(async (tx) => {
+  let order;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      order = await prisma.$transaction(async (tx) => {
       // ── 1. Relecture des déclinaisons commandées ─────────────────────────
       const variants = await tx.productVariant.findMany({
         where: { id: { in: input.items.map((item) => item.variantId) } },
@@ -194,20 +196,34 @@ export async function POST(request: Request) {
         },
         select: { reference: true, total: true },
       });
-    });
+      });
 
-    return NextResponse.json({ reference: order.reference, total: order.total }, { status: 201 });
-  } catch (error) {
-    if (error instanceof OrderError) {
-      return NextResponse.json({ message: error.message }, { status: 409 });
+      // Si la transaction réussit, on sort de la boucle de tentatives
+      break;
+    } catch (error) {
+      const isRefConflict =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002' &&
+        String(error.meta?.target).includes('reference');
+        
+      if (!isRefConflict || attempt === 3) {
+        if (error instanceof OrderError) {
+          return NextResponse.json({ message: error.message }, { status: 409 });
+        }
+
+        console.error(`[commande] échec de création (tentative ${attempt})`, error);
+        return NextResponse.json(
+          { message: "La commande n'a pas pu être enregistrée. Réessayez ou appelez-nous." },
+          { status: 500 },
+        );
+      }
+      
+      // En cas de conflit, on attend un peu avant de réessayer pour laisser passer la requête concurrente
+      await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 50));
     }
-
-    console.error('[commande] échec de création', error);
-    return NextResponse.json(
-      { message: "La commande n'a pas pu être enregistrée. Réessayez ou appelez-nous." },
-      { status: 500 },
-    );
   }
+
+  return NextResponse.json({ reference: order!.reference, total: order!.total }, { status: 201 });
 }
 
 /** Erreur métier destinée à être affichée telle quelle au client. */

@@ -340,29 +340,7 @@ model Setting {
   @@map("settings")
 }
 
-/// Visuel téléversé depuis l'administration.
-///
-/// Les octets sont stockés en base plutôt que sur le disque : l'hébergement
-/// d'une application Next.js est très souvent en lecture seule (Vercel et
-/// assimilés), et un fichier écrit sur le disque disparaîtrait au déploiement
-/// suivant. La base est le seul support de stockage dont on soit certain qu'il
-/// survive, et elle ne demande aucun compte tiers à créer par la cliente.
-///
-/// Les images sont redimensionnées et converties en WebP par le navigateur
-/// avant l'envoi : chacune pèse quelques centaines de kilo-octets, ce qui reste
-/// sans effet sensible sur la taille de la base.
-model MediaAsset {
-  id        String   @id @default(cuid())
-  filename  String
-  mimeType  String
-  width     Int
-  height    Int
-  size      Int // en octets
-  data      Bytes
-  createdAt DateTime @default(now())
-
-  @@map("media_assets")
-}
+// Table MediaAsset retirée au profit du stockage cloud.
 
 /// Inscriptions newsletter — la base est prête, l'envoi viendra en V2.
 model NewsletterSubscriber {
