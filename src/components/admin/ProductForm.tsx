@@ -61,12 +61,13 @@ export function ProductForm({ categories, product }: ProductFormProps) {
   const action = product ? updateProduct.bind(null, product.id) : createProduct;
   const [state, formAction] = useActionState<ActionState, FormData>(action, {});
 
-  const [variants, setVariants] = useState<VariantRow[]>(() =>
-    (product?.variants ?? [BLANK_VARIANT]).map((variant, index) => ({
+  const [variants, setVariants] = useState<VariantRow[]>(() => {
+    const source = state.payload?.variants ?? product?.variants ?? [BLANK_VARIANT];
+    return source.map((variant: any, index: number) => ({
       ...variant,
       key: `v${index}`,
-    })),
-  );
+    }));
+  });
 
   const nextKey = useRef(variants.length);
 
@@ -130,7 +131,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
 
   return (
     <>
-      <form action={formAction} className="flex flex-col gap-10">
+      <form key={state.timestamp} action={formAction} className="flex flex-col gap-10">
         <Section title="Informations">
           <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
             <Input
@@ -259,7 +260,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           title="Visuels"
           description="Les photos sont compressées automatiquement avant l'envoi : inutile de les préparer, prenez-les directement au téléphone."
         >
-          <ImageUploader initial={product?.images ?? []} productName={product?.name ?? 'Nouveau produit'} />
+          <ImageUploader initial={state.payload?.images ?? product?.images ?? []} productName={state.payload?.name ?? product?.name ?? 'Nouveau produit'} />
         </Section>
 
         <Section
@@ -288,7 +289,6 @@ export function ProductForm({ categories, product }: ProductFormProps) {
                   <RowField label="Taille">
                     <input
                       type="text"
-                      inputMode="numeric"
                       required
                       maxLength={12}
                       value={row.size}

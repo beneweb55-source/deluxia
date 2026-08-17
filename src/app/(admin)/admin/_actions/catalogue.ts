@@ -21,9 +21,12 @@ import { slugify } from '@/lib/format';
  */
 
 export interface ActionState {
-  error?: string;
+  message?: string;
+  errors?: Record<string, string[]>;
   success?: string;
   payload?: any;
+  timestamp?: number;
+  error?: string;
 }
 
 /** Invalide les pages qui affichent du catalogue. */
@@ -133,6 +136,8 @@ function getRawPayload(formData: FormData) {
     isActive: formData.get('isActive') === 'on',
     isFeatured: formData.get('isFeatured') === 'on',
     isNew: formData.get('isNew') === 'on',
+    images: formData.get('images')?.toString().split('\n').filter(Boolean) ?? [],
+    variants: JSON.parse(formData.get('variants')?.toString() || '[]'),
   };
 }
 
@@ -148,11 +153,18 @@ function uniqueError(error: unknown): string | null {
 export async function createProduct(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
 
-  const parsed = readProductForm(formData);
-  const payload = getRawPayload(formData);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Formulaire invalide.', payload };
+  const validated = readProductForm(formData);
+  const rawPayload = getRawPayload(formData);
+  if (!validated.success) {
+    return {
+      message: 'Veuillez corriger les erreurs ci-dessous.',
+      errors: validated.error.flatten().fieldErrors,
+      payload: rawPayload,
+      timestamp: Date.now(),
+    };
+  }
 
-  const data = parsed.data;
+  const data = validated.data;
   const slug = slugify(data.slug || data.name);
 
   let created: { slug: string };
@@ -183,9 +195,11 @@ export async function createProduct(_prev: ActionState, formData: FormData): Pro
     });
   } catch (error) {
     const message = uniqueError(error);
-    if (message) return { error: message, payload };
-    console.error('[admin] création produit', error);
-    return { error: "Le produit n'a pas pu être créé.", payload };
+    return {
+      message: message ?? "Une erreur est survenue lors de l'enregistrement.",
+      payload: rawPayload,
+      timestamp: Date.now(),
+    };
   }
 
   revalidateCatalogue(created.slug);
@@ -199,11 +213,18 @@ export async function updateProduct(
 ): Promise<ActionState> {
   await requireAdmin();
 
-  const parsed = readProductForm(formData);
-  const payload = getRawPayload(formData);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Formulaire invalide.', payload };
+  const validated = readProductForm(formData);
+  const rawPayload = getRawPayload(formData);
+  if (!validated.success) {
+    return {
+      message: 'Veuillez corriger les erreurs ci-dessous.',
+      errors: validated.error.flatten().fieldErrors,
+      payload: rawPayload,
+      timestamp: Date.now(),
+    };
+  }
 
-  const data = parsed.data;
+  const data = validated.data;
   const slug = slugify(data.slug || data.name);
 
   try {
@@ -244,9 +265,11 @@ export async function updateProduct(
     });
   } catch (error) {
     const message = uniqueError(error);
-    if (message) return { error: message, payload };
-    console.error('[admin] mise à jour produit', error);
-    return { error: "Le produit n'a pas pu être enregistré.", payload };
+    return {
+      message: message ?? "Une erreur est survenue lors de l'enregistrement.",
+      payload: rawPayload,
+      timestamp: Date.now(),
+    };
   }
 
   revalidateCatalogue(slug);

@@ -284,21 +284,13 @@ export function ImageUploader({
   );
 }
 
-/**
- * Redimensionne et convertit une image dans le navigateur.
- *
- * `createImageBitmap` décode l'image hors du fil principal, ce qui évite de
- * figer l'interface sur une photo de 12 mégapixels. En cas d'échec — format
- * exotique, navigateur ancien — le fichier d'origine est envoyé tel quel : mieux
- * vaut un envoi plus lourd qu'un téléversement impossible.
- */
 async function compress(file: File): Promise<File> {
   try {
     let sourceFile = file;
     const isHeic =
       file.type === 'image/heic' ||
       file.type === 'image/heif' ||
-      file.name.toLowerCase().match(/\.hei[cf]$/);
+      file.name.toLowerCase().match(/\.(hei[cf])$/);
 
     if (isHeic) {
       const heic2any = (await import('heic2any')).default;
@@ -312,42 +304,78 @@ async function compress(file: File): Promise<File> {
       sourceFile = new File([blob], baseName, { type: 'image/jpeg' });
     }
 
-    const bitmap = await createImageBitmap(sourceFile);
-    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    let bitmap: ImageBitmap | HTMLImageElement;
+    let originalWidth: number;
+    let originalHeight: number;
 
-    const width = Math.round(bitmap.width * scale);
-    const height = Math.round(bitmap.height * scale);
+    if (typeof createImageBitmap !== 'undefined') {
+      try {
+        bitmap = await createImageBitmap(sourceFile);
+        originalWidth = bitmap.width;
+        originalHeight = bitmap.height;
+      } catch (e) {
+        bitmap = await loadImageFallback(sourceFile);
+        originalWidth = bitmap.width;
+        originalHeight = bitmap.height;
+      }
+    } else {
+      bitmap = await loadImageFallback(sourceFile);
+      originalWidth = bitmap.width;
+      originalHeight = bitmap.height;
+    }
+
+    const scale = Math.min(1, MAX_EDGE / Math.max(originalWidth, originalHeight));
+    const width = Math.round(originalWidth * scale);
+    const height = Math.round(originalHeight * scale);
 
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
 
     const context = canvas.getContext('2d');
-    if (!context) return file;
+    if (!context) return sourceFile;
 
     context.drawImage(bitmap, 0, 0, width, height);
-    bitmap.close();
+
+    if ('close' in bitmap && typeof bitmap.close === 'function') {
+      bitmap.close();
+    }
 
     let blob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob(resolve, 'image/webp', QUALITY);
     });
 
-    // Un navigateur sans encodeur WebP (ex: anciens iPhone) renvoie du PNG.
-    // Dans ce cas, on bascule sur une compression JPEG classique.
     if (!blob || blob.type !== 'image/webp') {
       blob = await new Promise<Blob | null>((resolve) => {
         canvas.toBlob(resolve, 'image/jpeg', QUALITY);
       });
     }
 
-    if (!blob || blob.size >= file.size) return file;
+    if (!blob || blob.size >= sourceFile.size) return sourceFile;
 
     const base = file.name.replace(/\.[^.]+$/, '') || 'visuel';
     const ext = blob.type === 'image/jpeg' ? 'jpg' : 'webp';
     return new File([blob], `${base}.${ext}`, { type: blob.type });
-  } catch {
+  } catch (err) {
+    console.error('Erreur lors de la compression :', err);
     return file;
   }
+}
+
+function loadImageFallback(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Impossible de décoder l'image."));
+    };
+    img.src = url;
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
